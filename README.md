@@ -1,7 +1,8 @@
+## Tecnologias
 * Backend: Java 26
 * Frontend: ReactTS 
 
-### Conexion a BD (application.properties):
+## Conexion a BD (application.properties):
 1. La base de datos se tiene que llamar `mesu` **obligatoriamente**
 ```
 spring.application.name=backend
