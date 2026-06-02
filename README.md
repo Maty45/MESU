@@ -2,11 +2,12 @@
 * Frontend: ReactTS 
 
 ### Conexion a BD (application.properties):
+1. La base de datos se tiene que llamar `mesu` **obligatoriamente**
 ```
 spring.application.name=backend
 spring.datasource.url=jdbc:mysql://localhost:3306/mesu?useSSL=false&serverTimezone=UTC
-spring.datasource.username=root
-spring.datasource.password=root
+spring.datasource.username=root  // CAMBIAR POR TU USER
+spring.datasource.password=root  // CAMBIAR POR TU PASS
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
