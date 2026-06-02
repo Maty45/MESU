@@ -26,5 +26,5 @@ public class TipoInsumo {
         this.nombreTipoInsumo = nombreTipoInsumo;
         this.fechaHBajaTipoInsumo = fechaHBajaTipoInsumo;
     }
-//    ignora este comentario
+//    esto solo se ve en developer
 }
