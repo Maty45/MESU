@@ -1,4 +1,5 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { ScrollToTop } from './ScrollToTop';
 import { Heart, Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -33,6 +34,7 @@ export function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
+      <ScrollToTop />
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
