@@ -1,16 +1,9 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { ScrollToTop } from './ScrollToTop';
 import { Heart, Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
 import { useState } from 'react';
-
-// Fallback `useAuth` cuando no existe el contexto global.
-type AuthUser = { name?: string; role?: string } | null;
-function useAuth() {
-  return {
-    user: null as AuthUser,
-    logout: () => {},
-    isAuthenticated: false,
-  };
-}
+import { useAuth } from '../context/AuthContext';
+import logoMesu from '../assets/images/isologo.png';
 
 export function Layout() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -37,18 +30,18 @@ export function Layout() {
     }
   };
 
+  
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
+      <ScrollToTop />
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center gap-2">
-              <div className="bg-gradient-to-br from-blue-500 to-teal-500 rounded-lg p-2">
-                <Heart className="w-6 h-6 text-white fill-white" />
+              <div className=" rounded-lg p-2">
+                <img src={logoMesu} alt="MESU Logo" className="w-36 h-14" />
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
-                MESU
-              </span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-6">
@@ -174,13 +167,8 @@ export function Layout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="bg-gradient-to-br from-blue-500 to-teal-500 rounded-lg p-2">
-                  <Heart className="w-5 h-5 text-white fill-white" />
-                </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
-                  MESU
-                </span>
+              <div className=" rounded-lg p-2">
+                <img src={logoMesu} alt="MESU Logo" className="w-36 h-14" />
               </div>
               <p className="text-sm text-slate-600">
                 Marketplace solidario de productos ortopédicos. Conectando personas que necesitan con quienes pueden ayudar.
