@@ -1,8 +1,5 @@
-package com.services;
+package com.tipoinsumo;
 
-import com.models.TipoInsumo;
-import com.repositories.TipoInsumoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,14 +8,17 @@ import java.util.Optional;
 @Service
 public class TipoInsumoService {
 
-    @Autowired
     private TipoInsumoRepository tipoInsumoRepository;
+
+    public TipoInsumoService(TipoInsumoRepository tipoInsumoRepository) {
+        this.tipoInsumoRepository = tipoInsumoRepository;
+    }
 
     public List<TipoInsumo> obtenerTodos() {
         return tipoInsumoRepository.findAll();
     }
 
-    public Optional<TipoInsumo> obtenerPorId(Integer id) {
+    public Optional<TipoInsumo> obtenerPorId(Long id) {
         return tipoInsumoRepository.findById(id);
     }
 
@@ -26,7 +26,7 @@ public class TipoInsumoService {
         return tipoInsumoRepository.save(tipoInsumo);
     }
 
-    public void eliminar(Integer id) {
+    public void eliminar(Long id) {
         tipoInsumoRepository.deleteById(id);
     }
 }
