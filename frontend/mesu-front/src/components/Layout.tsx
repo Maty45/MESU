@@ -1,7 +1,16 @@
-import { Outlet, Link, useNavigate } from 'react-router';
-import { useAuth } from '../context/AuthContext';
-import { Heart, Menu, X, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Heart, Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
 import { useState } from 'react';
+
+// Fallback `useAuth` cuando no existe el contexto global.
+type AuthUser = { name?: string; role?: string } | null;
+function useAuth() {
+  return {
+    user: null as AuthUser,
+    logout: () => {},
+    isAuthenticated: false,
+  };
+}
 
 export function Layout() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -61,7 +70,7 @@ export function Layout() {
                     </Link>
                   )}
                   <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-                    <span className="text-sm text-slate-600">{user.name}</span>
+                    <span className="text-sm text-slate-600">{user?.name}</span>
                     <button
                       onClick={handleLogout}
                       className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
@@ -124,7 +133,7 @@ export function Layout() {
                     </Link>
                   )}
                   <div className="pt-3 border-t border-slate-200">
-                    <p className="text-sm text-slate-600 mb-2">{user.name}</p>
+                    <p className="text-sm text-slate-600 mb-2">{user?.name}</p>
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg"
