@@ -21,3 +21,6 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
 5. Si todo funciona correcto y no rompiste lo de alguien más, lo pasas a la developer cambiandote a la rama con `git checkout developer`
 6. Actualiza la developer con `git merge origin/developer`
 7. Si funciona todo pusheas tus cambios y subis a remoto con `git push`
+
+## A tener en cuenta para instalar dependencias en el front:
+Para instalar algo en el front, movete primero a la carpeta `mesu-front` y recien ahi instalalo con **pnpm**, no con npm
