@@ -28,8 +28,8 @@ public class Rol {
     @Column(name = "nombre_Rol", nullable = false, unique = true)
     private String nombreRol;
 
-    @Column(name = "fecha_alta_rol", nullable = false)
-    private LocalDate fechaAltaRol;
+    @Column(name = "fecha_alta_rol", nullable = true)
+    private LocalDate fechaAltaRol = LocalDate.now();
 
     @Column(name = "fecha_baja_rol")
     private LocalDate fechaBajaRol;
