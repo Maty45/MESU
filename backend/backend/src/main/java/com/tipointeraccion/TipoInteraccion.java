@@ -21,9 +21,6 @@ public class TipoInteraccion {
     @Column(name = "id_tipo_interaccion")
     private Long idTipoInteraccion;
 
-    @Column(name = "cod_tipo_interaccion", nullable = false, unique = true)
-    private int codTipoInteraccion;
-
     @Column(name = "nombre_tipo_interaccion", nullable = false, unique = true)
     private String nombreTipoInteraccion;
 

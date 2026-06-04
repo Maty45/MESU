@@ -22,9 +22,6 @@ public class Rol {
     @Column(name = "id_rol")
     private Long idRol;
 
-    @Column(name = "cod_rol", nullable = false, unique = true)
-    private int codRol;
-
     @Column(name = "nombre_Rol", nullable = false, unique = true)
     private String nombreRol;
 
