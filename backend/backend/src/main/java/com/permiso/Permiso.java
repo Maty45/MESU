@@ -19,9 +19,6 @@ public class Permiso {
     @Column(name = "id_permiso")
     private Long idPermiso;
 
-    @Column(name = "cod_permiso", nullable = false, unique = true)
-    private int codPermiso;
-
     @Column(name = "nombre_permiso", nullable = false, unique = true)
     private String nombrePermiso;
 

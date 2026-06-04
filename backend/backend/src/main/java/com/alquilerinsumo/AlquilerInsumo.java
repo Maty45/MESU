@@ -21,9 +21,6 @@ public class AlquilerInsumo {
     @Column(name = "id_alquiler_insumo")
     private Long idAlquiler;
 
-    @Column(name = "nro_alquiler_insumo", nullable = false, unique = true)
-    private int nroAlquilerInsumo;
-
     @Column(name = "fecha_desde_ai", nullable = false)
     private LocalDate fechaDesdeAI;
 

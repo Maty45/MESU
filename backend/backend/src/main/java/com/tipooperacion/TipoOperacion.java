@@ -21,9 +21,6 @@ public class TipoOperacion {
     @Column(name = "id_tipo_operacion")
     private Long idTipoOperacion;
 
-    @Column(name = "cod_tipo_operacion", nullable = false, unique = true)
-    private int codTipoOperacion;
-
     @Column(name = "nombre_tipo_operacion", nullable = false, unique = true)
     private String nombreTipoOperacion;
 

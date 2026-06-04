@@ -23,9 +23,6 @@ public class Reporte {
     @Column(name = "id_reporte")
     private Long id;
 
-    @Column(name = "nro_reporte", nullable = false, unique = true)
-    private int nroReporte;
-
     @Column(name = "fecha_hora_reporte", nullable = false)
     private LocalDateTime fechaHoraReporte;
 

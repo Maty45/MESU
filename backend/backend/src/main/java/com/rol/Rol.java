@@ -22,14 +22,11 @@ public class Rol {
     @Column(name = "id_rol")
     private Long idRol;
 
-    @Column(name = "cod_rol", nullable = false, unique = true)
-    private int codRol;
-
     @Column(name = "nombre_Rol", nullable = false, unique = true)
     private String nombreRol;
 
-    @Column(name = "fecha_alta_rol", nullable = false)
-    private LocalDate fechaAltaRol;
+    @Column(name = "fecha_alta_rol", nullable = true)
+    private LocalDate fechaAltaRol = LocalDate.now();
 
     @Column(name = "fecha_baja_rol")
     private LocalDate fechaBajaRol;
