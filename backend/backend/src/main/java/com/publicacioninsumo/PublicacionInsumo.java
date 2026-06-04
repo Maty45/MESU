@@ -30,9 +30,6 @@ public class PublicacionInsumo {
     @Column(name = "id_pi")
     private Long idPI;
 
-    @Column(name = "nro_pi", nullable = false, unique = true)
-    private int nroPI;
-
     @Column(name = "titulo_pi", nullable = false)
     private String tituloPI;
 

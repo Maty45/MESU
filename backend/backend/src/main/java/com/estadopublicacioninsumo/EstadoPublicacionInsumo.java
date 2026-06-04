@@ -21,9 +21,6 @@ public class EstadoPublicacionInsumo {
     @Column(name = "id_estado_pi")
     private Long idEstadoPI;
 
-    @Column(name = "cod_estado_pi", nullable = false, unique = true)
-    private int codEPI;
-
     @Column(name = "nombre_estado_pi", nullable = false, unique = true)
     private String nombreEPI;
 

@@ -21,9 +21,6 @@ public class EstadoInsumo {
     @Column(name = "id_estado_insumo")
     private  Long idEstadoInsumo;
 
-    @Column(name = "cod_estado_insumo", nullable = false, unique = true)
-    private int codEstadoInsumo;
-
     @Column(name = "nombre_estado_insumo", nullable = false, unique = true)
     private String nombreEstadoInsumo;
 

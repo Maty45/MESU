@@ -18,10 +18,7 @@ public class TipoInsumo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_tipo_insumo")
-    private Long tipoInsumo;
-
-    @Column(name = "cod_tipo_insumo", nullable = false, unique = true)
-    private int codTipoInsumo;
+    private Long idTipoInsumo;
 
     @Column(name = "nombre_tipo_insumo", nullable = false, unique = true)
     private String nombreTipoInsumo;
