@@ -1,6 +1,6 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { ScrollToTop } from './ScrollToTop';
-import { Heart, Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
+import {  Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import logoMesu from '../assets/images/isologo.png';
