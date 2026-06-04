@@ -23,7 +23,7 @@ public class RolPermiso {
     private Long idRolPermiso;
 
     @Column(name = "fecha_asignacion_rp")
-    private LocalDate fechaAsignacionRP;
+    private LocalDate fechaAsignacionRP = LocalDate.now();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_rol", nullable = false)
