@@ -1,9 +1,6 @@
 
-package com.controllers;
+package com.tipoinsumo;
 
-import com.models.TipoInsumo;
-import com.services.TipoInsumoService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,8 +12,11 @@ import java.util.Optional;
 @RequestMapping("/api/tipoinsumo")
 public class TipoInsumoController {
 
-    @Autowired
     private TipoInsumoService tipoInsumoService;
+
+    public TipoInsumoController(TipoInsumoService tipoInsumoService) {
+        this.tipoInsumoService = tipoInsumoService;
+    }
 
     @GetMapping
     public ResponseEntity<List<TipoInsumo>> obtenerTodos() {
@@ -24,7 +24,7 @@ public class TipoInsumoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TipoInsumo> obtenerPorId(@PathVariable Integer id) {
+    public ResponseEntity<TipoInsumo> obtenerPorId(@PathVariable Long id) {
         Optional<TipoInsumo> tipoInsumo = tipoInsumoService.obtenerPorId(id);
         return tipoInsumo.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -37,16 +37,16 @@ public class TipoInsumoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TipoInsumo> actualizar(@PathVariable Integer id, @RequestBody TipoInsumo tipoInsumo) {
+    public ResponseEntity<TipoInsumo> actualizar(@PathVariable Long id, @RequestBody TipoInsumo tipoInsumo) {
         if (tipoInsumoService.obtenerPorId(id).isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        tipoInsumo.setCodTipoInsumo(id);
+        //tipoInsumo.setCodTipoInsumo(id);  esto está mal...?
         return ResponseEntity.ok(tipoInsumoService.guardar(tipoInsumo));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         if (tipoInsumoService.obtenerPorId(id).isEmpty()) {
             return ResponseEntity.notFound().build();
         }
