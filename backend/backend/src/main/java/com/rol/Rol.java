@@ -1,5 +1,6 @@
 package com.rol;
 
+import com.usuariorol.UsuarioRol;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,15 +9,14 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.util.List;
 
-//Anotaciones Lombok
 @Getter
 @Setter
 @NoArgsConstructor
 
-//Anotaciones JPA
 @Entity
 @Table(name = "rol")
 public class Rol {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_rol")
@@ -31,6 +31,13 @@ public class Rol {
     @Column(name = "fecha_baja_rol")
     private LocalDate fechaBajaRol;
 
-    @OneToMany(mappedBy = "rol", cascade = {CascadeType.ALL}, orphanRemoval = true)
+    @OneToMany(mappedBy = "rol",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
     private List<RolPermiso> rolPermisos;
+
+    @OneToMany(mappedBy = "rol",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<UsuarioRol> usuarioRoles;
 }
