@@ -1,5 +1,6 @@
 package com.rol;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.usuariorol.UsuarioRol;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -7,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -31,10 +33,9 @@ public class Rol {
     @Column(name = "fecha_baja_rol")
     private LocalDate fechaBajaRol;
 
-    @OneToMany(mappedBy = "rol",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true)
-    private List<RolPermiso> rolPermisos;
+    @OneToMany(mappedBy = "rol", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<RolPermiso> rolPermisos = new ArrayList<>();
 
     @OneToMany(mappedBy = "rol",
             cascade = CascadeType.ALL,
