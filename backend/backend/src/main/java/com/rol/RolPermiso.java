@@ -1,5 +1,6 @@
 package com.rol;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.permiso.Permiso;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -15,7 +16,9 @@ import java.time.LocalDate;
 
 //Anotaciones JPA
 @Entity
-@Table(name = "rol_permiso")
+@Table(name = "rol_permiso",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"id_rol", "id_permiso"})
+)
 public class RolPermiso {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,6 +30,7 @@ public class RolPermiso {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_rol", nullable = false)
+    @JsonManagedReference
     private Rol rol;
 
     @ManyToOne(fetch = FetchType.LAZY)

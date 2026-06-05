@@ -1,8 +1,9 @@
 package com.permiso;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("api/permisos")
@@ -14,33 +15,35 @@ public class PermisoController {
     }
 
     @GetMapping
-    public List<Permiso> getAllPermisos() {
+    public ResponseEntity<java.util.List<Permiso>> getAllPermisos() {
         try {
-            return permisoService.getAllPermisos();
+            java.util.List<Permiso> permisos = permisoService.getAllPermisos();
+            return ResponseEntity.ok(permisos);
         } catch (Exception e) {
             System.err.println("Error al obtener los permisos: " + e.getMessage());
-            return null;
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     @PostMapping("/savePermiso")
-    public Permiso savePermiso(@RequestBody Permiso permiso) {
+    public ResponseEntity<Permiso> savePermiso(@RequestBody Permiso permiso) {
         try {
-            return permisoService.savePermiso(permiso);
+            Permiso saved = permisoService.savePermiso(permiso);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
         } catch (Exception e) {
             System.err.println("Error al guardar el permiso: " + e.getMessage());
-            return null;
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     @DeleteMapping("/delete/{id}")
-    public String deletePermiso(@PathVariable Long id) {
+    public ResponseEntity<String> deletePermiso(@PathVariable Long id) {
         try {
              permisoService.deletePermiso(id);
-             return "Permiso eliminado correctamente";
+             return ResponseEntity.ok("Permiso eliminado correctamente");
         } catch (Exception e) {
             System.err.println("Error al eliminar el permiso: " + e.getMessage());
-            return "Error al eliminar el permiso: " + e.getMessage();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al eliminar el permiso: " + e.getMessage());
         }
     }
 
