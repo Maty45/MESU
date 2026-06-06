@@ -1,6 +1,9 @@
 package com.auth;
 
+import com.dto.LoginRequest;
+import com.dto.LoginResponse;
 import com.dto.RegisterRequest;
+import com.jwt.JwtService;
 import com.rol.Rol;
 import com.rol.RolRepository;
 import com.usuario.Usuario;
@@ -21,6 +24,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RolRepository rolRepository;
     private final UsuarioRolRepository usuarioRolRepository;
+    private final JwtService jwtService;
 
     public void register(RegisterRequest request) {
 
@@ -70,26 +74,41 @@ public class AuthService {
         urPropietario.setUsuario(usuario);
         urPropietario.setRol(propietario);
 
+        if (usuarioRepository.existsByEmailUsuario(request.email())) {
+            throw new RuntimeException("El email ya está registrado");
+        }
+
+        if (usuarioRepository.existsByDniUsuario(request.dni())) {
+            throw new RuntimeException("El DNI ya está registrado");
+        }
+
         usuarioRolRepository.save(urCliente);
         usuarioRolRepository.save(urPropietario);
     }
 
-    public void login(String email, String password) {
+    public LoginResponse login(LoginRequest request) {
 
         Usuario usuario = usuarioRepository
-                .findByEmailUsuario(email)
+                .findByEmailUsuario(request.email())
                 .orElseThrow(() ->
                         new RuntimeException("Usuario no encontrado"));
 
         boolean passwordCorrecta =
                 passwordEncoder.matches(
-                        password,
+                        request.password(),
                         usuario.getContraseniaUsuario()
                 );
 
         if (!passwordCorrecta) {
             throw new RuntimeException("Contraseña incorrecta");
         }
+
+        String token =
+                jwtService.generateToken(
+                        usuario.getEmailUsuario()
+                );
+
+        return new LoginResponse(token);
     }
 
 }
