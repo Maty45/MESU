@@ -54,13 +54,21 @@ public class AuthService {
 
         usuario = usuarioRepository.save(usuario);
 
-        Rol cliente = rolRepository
+        Rol cliente;
+        Rol propietario;
+
+        try {
+        cliente = rolRepository
                 .findByNombreRol("CLIENTE")
                 .orElseThrow();
-
-        Rol propietario = rolRepository
+        propietario = rolRepository
                 .findByNombreRol("PROPIETARIO")
                 .orElseThrow();
+        } catch (Exception e) {
+            System.err.println("Error al asignar roles al usuario: " + e.getMessage());
+            throw new RuntimeException("Error al asignar roles al usuario: " + e.getMessage());
+        }
+
 
         UsuarioRol urCliente = new UsuarioRol();
         urCliente.setUsuario(usuario);
