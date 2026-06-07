@@ -24,17 +24,17 @@ export function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'users' | 'reports'>('overview');
 
-  if (!user || user.role !== 'admin') {
-    return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">Acceso denegado</h2>
-          <p className="text-slate-600 mb-6">Esta página es solo para administradores</p>
-          <Button onClick={() => navigate('/marketplace')}>Ir al Marketplace</Button>
-        </div>
+  if (!user || !user.role.includes('ADMIN')) {
+  return (
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">Acceso denegado</h2>
+        <p className="text-slate-600 mb-6">Esta página es solo para administradores</p>
+        <Button onClick={() => navigate('/marketplace')}>Ir al Marketplace</Button>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   const totalUsers = 156;
   const totalProducts = mockProducts.length;
