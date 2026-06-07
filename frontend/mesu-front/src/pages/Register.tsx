@@ -117,6 +117,7 @@ export function Register() {
               type="password"
               label="Contraseña"
               placeholder="••••••••"
+                minLength={9}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -126,6 +127,7 @@ export function Register() {
               type="password"
               label="Confirmar contraseña"
               placeholder="••••••••"
+              minLength={9}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
