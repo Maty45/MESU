@@ -1,11 +1,13 @@
 package com.rol;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 //Anotaciones Lombok
@@ -32,5 +34,6 @@ public class Rol {
     private LocalDate fechaBajaRol;
 
     @OneToMany(mappedBy = "rol", cascade = {CascadeType.ALL}, orphanRemoval = true)
-    private List<RolPermiso> rolPermisos;
+    @JsonManagedReference
+    private List<RolPermiso> rolPermisos = new ArrayList<>();
 }

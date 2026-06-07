@@ -1,5 +1,6 @@
 package com.rol;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +22,7 @@ public class RolController {
             return service.getAllRoles();
         } catch (Exception e) {
             System.err.println("Error al obtener los roles: " + e.getMessage());
-            return Collections.emptyList();
+            return e.getMessage().contains("No value present") ? Collections.emptyList() : null;
         }
     }
 
@@ -43,6 +44,23 @@ public class RolController {
         } catch (Exception e) {
             System.err.println("Error al eliminar el rol: " + e.getMessage());
             return "Error al eliminar el rol: " + e.getMessage();
+        }
+    }
+
+    @PostMapping("/asignarPermiso")
+    public ResponseEntity<String> asignarPermiso(@RequestParam Long idRol, @RequestParam Long idPermiso) {
+        try {
+            RolPermiso rp = service.asignarPermiso(idRol, idPermiso);
+            if (rp == null) {
+                return ResponseEntity.status(409).build(); // 409 Conflict
+            }
+            return ResponseEntity.ok("Permiso asignado correctamente");
+        } catch (RuntimeException e) {
+            System.err.println("Error al asignar el permiso: " + e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Error al asignar el permiso: " + e.getMessage());
+            return ResponseEntity.status(500).body(e.getMessage());
         }
     }
 
