@@ -21,7 +21,7 @@ public class CondicionOperacion {
     private Long idCondicionOperacion;
 
     @Column(name = "monto_condicion_operacion")
-    private int montoCondicionOperacion;
+    private Integer montoCondicionOperacion;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "unidad_tiempo_condicion_operacion")
