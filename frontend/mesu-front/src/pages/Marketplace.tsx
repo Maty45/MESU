@@ -98,14 +98,14 @@ export function Marketplace() {
               <h1 className="text-3xl font-bold text-slate-900 mb-2">Marketplace</h1>
               <p className="text-slate-600">Encuentra el producto ortopédico que necesitas</p>
             </div>
-            {user?.role === 'owner' && (
-              <Link to="/create-product">
+              {user?.role.includes('PROPIETARIO') && (
+                <Link to="/create-product">
                 <Button className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Publicar Producto
+                <Plus className="w-4 h-4" />
+                    Publicar Producto
                 </Button>
-              </Link>
-            )}
+                </Link>
+              )}
           </div>
 
           <div className="flex flex-col md:flex-row gap-4">
