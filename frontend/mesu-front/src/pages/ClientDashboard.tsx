@@ -16,17 +16,23 @@ export function ClientDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  if (!user || user.role !== 'client') {
-    return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">Acceso denegado</h2>
-          <p className="text-slate-600 mb-6">Esta página es solo para clientes</p>
-          <Button onClick={() => navigate('/marketplace')}>Ir al Marketplace</Button>
-        </div>
+  if (!user || !user.roles.includes('CLIENTE')) {
+  return (
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">
+          Acceso denegado
+        </h2>
+        <p className="text-slate-600 mb-6">
+          Esta página es solo para clientes
+        </p>
+        <Button onClick={() => navigate('/marketplace')}>
+          Ir al Marketplace
+        </Button>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   const userOperations = mockOperations.filter((op) => op.clientId === 'client1');
   const activeRentals = userOperations.filter((op) => op.type === 'rental' && op.status === 'active');

@@ -98,7 +98,7 @@ export function Marketplace() {
               <h1 className="text-3xl font-bold text-slate-900 mb-2">Marketplace</h1>
               <p className="text-slate-600">Encuentra el producto ortopédico que necesitas</p>
             </div>
-              {user?.role.includes('PROPIETARIO') && (
+              {user?.roles.includes('PROPIETARIO') && (
                 <Link to="/create-product">
                 <Button className="gap-2">
                 <Plus className="w-4 h-4" />

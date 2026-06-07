@@ -25,16 +25,22 @@ export function OwnerDashboard() {
   const [reportClientName, setReportClientName] = useState('');
   const [reportReason, setReportReason] = useState('');
 
-  if (!user || user.role !== 'owner') {
-    return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">Acceso denegado</h2>
-          <p className="text-slate-600 mb-6">Esta página es solo para propietarios</p>
-          <Button onClick={() => navigate('/marketplace')}>Ir al Marketplace</Button>
-        </div>
+  if (!user || !user.roles.includes('PROPIETARIO')) {
+  return (
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">
+          Acceso denegado
+        </h2>
+        <p className="text-slate-600 mb-6">
+          Esta página es solo para propietarios
+        </p>
+        <Button onClick={() => navigate('/marketplace')}>
+          Ir al Marketplace
+        </Button>
       </div>
-    );
+    </div>
+  );
   }
 
   const userProducts = mockProducts.filter((p) => p.ownerId === 'owner1');

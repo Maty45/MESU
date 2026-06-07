@@ -22,10 +22,10 @@ export const router = createBrowserRouter([
       {path: "register", Component: Register },
       {path: "marketplace", Component: Marketplace },
       {path: "accountsettings", Component: AccountSettings},
-      {path: "admindashboard", Component: AdminDashboard},
-      {path: "clientdashboard", Component: ClientDashboard},
       {path: "createproduct", Component: CreateProduct},
-      {path: "owner-dashboard", Component: OwnerDashboard},
+      { path: "admin-dashboard", Component: AdminDashboard },
+      { path: "client-dashboard", Component: ClientDashboard },
+      { path: "owner-dashboard", Component: OwnerDashboard },
       {path: "product-detail", Component: ProductDetail},
       {path: "*", Component: NotFound}
     ],

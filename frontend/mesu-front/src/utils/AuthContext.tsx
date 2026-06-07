@@ -69,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles: data.roles
       };
 
+      console.log("USUARIO A GUARDAR:", user);
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("token", data.token);
       setUser(user);

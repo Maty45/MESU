@@ -17,18 +17,18 @@ export function Layout() {
   };
 
   const getDashboardLink = () => {
-    if (!user) return '/marketplace';
-    switch (user.role) {
-      case 'admin':
-        return '/admin-dashboard';
-      case 'owner':
-        return '/owner-dashboard';
-      case 'client':
-        return '/client-dashboard';
-      default:
-        return '/marketplace';
-    }
-  };
+  if (!user) return '/marketplace';
+
+  if (user.roles.includes('ADMIN')) {
+    return '/admin-dashboard';
+  }
+
+  if (user.roles.includes('PROPIETARIO')) {
+    return '/owner-dashboard';
+  }
+
+  return '/client-dashboard';
+};
 
   
 
@@ -54,12 +54,15 @@ export function Layout() {
                     <LayoutDashboard className="w-4 h-4" />
                     Panel
                   </Link>
-                  {(user?.role === 'client' || user?.role === 'owner') && (
+                  {(user?.roles.includes('CLIENTE') ||
+                      user?.roles.includes('PROPIETARIO')) && (
                     <Link
                       to="/account-settings"
                       className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition font-medium"
                     >
-                      {user?.role === 'client' ? 'Cliente' : 'Propietario'}
+                      {user?.roles.includes('PROPIETARIO')
+                        ? 'Propietario'
+                        : 'Cliente'}
                     </Link>
                   )}
                   <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
@@ -116,13 +119,16 @@ export function Layout() {
                   >
                     Panel
                   </Link>
-                  {(user?.role === 'client' || user?.role === 'owner') && (
+                  {(user?.roles.includes('CLIENTE')
+                      || user?.roles.includes('PROPIETARIO')) && (
                     <Link
                       to="/account-settings"
                       className="block py-2 text-blue-700 hover:text-blue-900 font-medium"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      {user?.role === 'client' ? 'Cliente' : 'Propietario'}
+                      {user?.roles.includes('PROPIETARIO')
+                          ? 'Propietario'
+                          : 'Cliente'}
                     </Link>
                   )}
                   <div className="pt-3 border-t border-slate-200">
