@@ -3,8 +3,7 @@ package com.publicacioninsumo.dto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -14,7 +13,7 @@ public class PublicacionInsumoResponseDTO {
     private Long id;
     private String titulo;
     private String descripcion;
-    private LocalDateTime fecha;
+    private LocalDate fecha;
 
     //Monto y unidad de tiempo
     private Integer monto;
