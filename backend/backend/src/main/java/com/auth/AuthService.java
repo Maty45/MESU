@@ -28,11 +28,12 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
 
-        if (usuarioRepository.existsByEmailUsuario(
-                request.email())) {
+        if (usuarioRepository.existsByEmailUsuario(request.email())) {
+            throw new RuntimeException("El email ya está registrado");
+        }
 
-            throw new RuntimeException(
-                    "El email ya está registrado");
+        if (usuarioRepository.existsByDniUsuario(request.dni())) {
+            throw new RuntimeException("El DNI ya está registrado");
         }
 
         Usuario usuario = new Usuario();
@@ -43,18 +44,11 @@ public class AuthService {
         usuario.setEmailUsuario(request.email());
 
         usuario.setContraseniaUsuario(
-                passwordEncoder.encode(
-                        request.password()
-                )
+                passwordEncoder.encode(request.password())
         );
 
-        usuario.setTelefonoUsuario(
-                request.telefono()
-        );
-
-        usuario.setFechaHRegistroUsuario(
-                LocalDateTime.now()
-        );
+        usuario.setTelefonoUsuario(request.telefono());
+        usuario.setFechaHRegistroUsuario(LocalDateTime.now());
 
         usuario = usuarioRepository.save(usuario);
 
@@ -73,14 +67,6 @@ public class AuthService {
         UsuarioRol urPropietario = new UsuarioRol();
         urPropietario.setUsuario(usuario);
         urPropietario.setRol(propietario);
-
-        if (usuarioRepository.existsByEmailUsuario(request.email())) {
-            throw new RuntimeException("El email ya está registrado");
-        }
-
-        if (usuarioRepository.existsByDniUsuario(request.dni())) {
-            throw new RuntimeException("El DNI ya está registrado");
-        }
 
         usuarioRolRepository.save(urCliente);
         usuarioRolRepository.save(urPropietario);

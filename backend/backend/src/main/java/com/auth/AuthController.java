@@ -19,6 +19,8 @@ public class AuthController {
     public ResponseEntity<String> register(
             @Valid @RequestBody RegisterRequest request) {
 
+        System.out.println(">>> ENTRE A REGISTER");
+
         authService.register(request);
 
         return ResponseEntity.ok(
