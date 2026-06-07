@@ -22,6 +22,12 @@ public class PublicacionInsumoCreateDTO {
     @NotBlank(message = "La dirección de la publicación no puede estar vacía en el alta")
     private String direccion;
 
+    @NotBlank(message = "La longitud de la ubicación no puede estar vacía en el alta")
+    private Double longitud;
+
+    @NotBlank(message = "La latitud de la ubicación no puede estar vacía en el alta")
+    private Double latitud;
+
     private Integer monto;
     private String unidadTiempo;
 

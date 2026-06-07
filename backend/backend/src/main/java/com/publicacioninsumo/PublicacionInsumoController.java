@@ -1,59 +1,77 @@
 package com.publicacioninsumo;
 
+import com.publicacioninsumo.dto.PublicacionInsumoCreateDTO;
+import com.publicacioninsumo.dto.PublicacionInsumoResponseDTO;
+import com.publicacioninsumo.dto.PublicacionInsumoUpdateDTO;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.nio.file.AccessDeniedException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/publicaciones")
 public class PublicacionInsumoController {
-    private final PublicacionInsumoService service;
 
-    public PublicacionInsumoController(PublicacionInsumoService service) {
-        this.service = service;
+    private final PublicacionInsumoService publicacionService;
+
+    public PublicacionInsumoController(PublicacionInsumoService publicacionService) {
+        this.publicacionService = publicacionService;
     }
 
+    // ==========================================
+    // GET: Obtener el catálogo activo
+    // ==========================================
     @GetMapping
-    public ResponseEntity<PublicacionInsumo> getAllPublicaciones() {
-        try {
-            return service.getAllPublicaciones();
-        } catch (Exception e) {
-            System.err.println("Error al obtener las publicaciones: " + e.getMessage());
-            return Collections.emptyList();
-        }
+    public ResponseEntity<List<PublicacionInsumoResponseDTO>> obtenerCatalogo() {
+        List<PublicacionInsumoResponseDTO> catalogo = publicacionService.obtenerPublicacionesActivas();
+        return ResponseEntity.ok(catalogo); // Retorna 200 OK
     }
 
-    @GetMapping("/{id}")
-    public PublicacionInsumo getPublicacionById(@PathVariable Long id) {
-        try {
-            return service.getPublicacionById(id);
-        } catch (Exception e) {
-            System.err.println("Error al obtener la publicación: " + e.getMessage());
-            return null;
-        }
+    // ==========================================
+    // POST: Crear una nueva publicación
+    // ==========================================
+    @PostMapping
+    public ResponseEntity<PublicacionInsumoResponseDTO> crearPublicacion(
+            @Valid @RequestBody PublicacionInsumoCreateDTO createDTO,
+            Authentication authentication) {
+
+        // Extraemos el email o username del token (Ajustá según cómo configuraste tu JWT/Security)
+        String emailUsuarioLogueado = authentication.getName();
+
+        PublicacionInsumoResponseDTO nuevaPublicacion = publicacionService.crearPublicacion(createDTO, emailUsuarioLogueado);
+
+        return new ResponseEntity<>(nuevaPublicacion, HttpStatus.CREATED); // Retorna 201 Created
     }
 
-    @PostMapping("/save")
-    public PublicacionInsumo savePublicacion(@RequestBody PublicacionInsumo publicacionInsumo) {
-        try {
-            return service.savePublicacion(publicacionInsumo);
-        } catch (Exception e) {
-            System.err.println("Error al guardar la publicación: " + e.getMessage());
-            return null;
-        }
+    // ==========================================
+    // PUT: Modificar una publicación existente
+    // ==========================================
+    @PutMapping("/{id}")
+    public ResponseEntity<PublicacionInsumoResponseDTO> modificarPublicacion(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody PublicacionInsumoUpdateDTO updateDTO,
+            Authentication authentication) throws AccessDeniedException {
+
+        String emailUsuarioLogueado = authentication.getName();
+
+        PublicacionInsumoResponseDTO modificada = publicacionService.modificarPublicacion(id, updateDTO, emailUsuarioLogueado);
+
+        return ResponseEntity.ok(modificada); // Retorna 200 OK
     }
 
-    @DeleteMapping("/delete/{id}")
-    public String deletePublicacion(@PathVariable Long id) {
-        try {
-            service.deletePublicacion(id);
-            return "Publicación eliminada correctamente";
-        } catch (Exception e) {
-            System.err.println("Error al eliminar la publicación: " + e.getMessage());
-            return "Error al eliminar la publicación: " + e.getMessage();
-        }
-    }
+    // ==========================================
+    // DELETE: Baja lógica de la publicación
+    // ==========================================
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarPublicacion(@PathVariable("id") Long id, Authentication authentication) throws AccessDeniedException {
+        String emailUsuarioLogueado = authentication.getName();
 
+        publicacionService.eliminarPublicacion(id, emailUsuarioLogueado);
+
+        return ResponseEntity.noContent().build(); // Retorna 204 No Content (Éxito, pero sin cuerpo en la respuesta)
+    }
 }

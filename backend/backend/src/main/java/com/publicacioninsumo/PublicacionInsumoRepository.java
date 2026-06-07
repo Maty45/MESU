@@ -30,22 +30,7 @@ public interface PublicacionInsumoRepository extends JpaRepository<PublicacionIn
             "JOIN FETCH p.usuarioPropietario " +
             "JOIN FETCH p.publicacionInsumoUbicacion " +
             "LEFT JOIN FETCH p.publicacionInsumoImagenes " +
-            "WHERE p.nroPI = :id")
+            "WHERE p.idPI = :id")
     Optional<PublicacionInsumo> findByDetalleId(@Param("id") long id);
 
-    // Buscar publicaciones por tipo de insumo
-    @Query("SELECT DISTINCT p FROM PublicacionInsumo p " +
-            "LEFT JOIN FETCH p.imagenes " +
-            "WHERE p.tipoInsumo.nombreTipoInsumo = :nombreTipoInsumo")
-    List<PublicacionInsumo> findByTipoInsumo(@Param("nombreTipoInsumo") String nombreTipoInsumo);
-
-    // Buscar publicaciones por estado físico del insumo
-    @Query("SELECT p FROM PublicacionInsumo p WHERE p.estadoInsumo.nombreEstadoInsumo = :nombreEstadoInsumo")
-    List<PublicacionInsumo> findByEstadoInsumo(@Param("nombreEstadoInsumo") String nombreEstadoInsumo);
-
-    // Buscar publicaciones de un usuario particular (Mis Publicaciones)
-    @Query("SELECT DISTINCT p FROM PublicacionInsumo p " +
-            "LEFT JOIN FETCH p.imagenes " +
-            "WHERE p.usuarioPropietario.idUsuario = :idUsuario")
-    List<PublicacionInsumo> findByUsuarioPropietario(@Param("idUsuario") Long idUsuario);
 }
