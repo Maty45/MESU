@@ -1,4 +1,11 @@
 package com.dto;
 
-public record LoginResponse(String token) {
-}
+import java.util.List;
+
+public record LoginResponse(
+        String token,
+        String nombre,
+        String apellido,
+        String email,
+        List<String> roles
+) {}

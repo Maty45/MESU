@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ public class AuthService {
     private final RolRepository rolRepository;
     private final UsuarioRolRepository usuarioRolRepository;
     private final JwtService jwtService;
+
 
     public void register(RegisterRequest request) {
 
@@ -94,7 +96,18 @@ public class AuthService {
                         usuario.getEmailUsuario()
                 );
 
-        return new LoginResponse(token);
+        List<String> roles = usuario.getUsuarioRoles()
+                .stream()
+                .map(ur -> ur.getRol().getNombreRol())
+                .toList();
+
+        return new LoginResponse(
+                token,
+                usuario.getNombreUsuario(),
+                usuario.getApellidoUsuario(),
+                usuario.getEmailUsuario(),
+                roles
+        );
     }
 
 }

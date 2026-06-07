@@ -15,13 +15,13 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string, role?: UserRole) => Promise<void>;
   register: (
-  dni: string,
-  nombre: string,
-  apellido: string,
-  email: string,
-  password: string,
-  telefono: string
-) => Promise<void>;
+    dni: string,
+    nombre: string,
+    apellido: string,
+    email: string,
+    password: string,
+    telefono: string
+  ) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -29,90 +29,104 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-
-  const login = async (
-  email: string,
-  password: string,
-  role: UserRole = 'client'
-): Promise<void> => {
-  try {
-  const response = await fetch("http://localhost:8080/auth/login", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      email,
-      password
-    })
+  const [user, setUser] = useState<User | null>(() => {
+  const saved = localStorage.getItem("user");
+  return saved ? JSON.parse(saved) : null;
   });
 
-  console.log("STATUS:", response.status);
-  console.log("OK:", response.ok);
+  // 🟢 LOGIN REAL
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<void> => {
+    try {
+      const response = await fetch("http://localhost:8080/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, password })
+      });
 
-  const body = await response.text();
-  console.log("BODY:", body);
+      console.log("STATUS:", response.status);
+      console.log("OK:", response.ok);
 
-  if (!response.ok) {
-    throw new Error("Login failed");
-  }
+      const body = await response.text();
+      console.log("BODY:", body);
 
-  const data = JSON.parse(body);
+      if (!response.ok) {
+        throw new Error("Login failed");
+      }
 
-  localStorage.setItem("token", data.token);
+      const data = JSON.parse(body);
 
-  const mockUser: User = {
-    id: email,
-    name: email.split("@")[0],
-    email,
-    role
+      localStorage.setItem("token", data.token);
+
+      const user: User = {
+        id: data.email,
+        name: `${data.nombre} ${data.apellido}`,
+        email: data.email,
+        role: data.roles.includes("ADMIN")
+          ? "admin"
+          : data.roles.includes("PROPIETARIO")
+          ? "owner"
+          : "client"
+      };
+
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", data.token);
+
+    } catch (error) {
+      console.log("Login error:", error);
+      throw error;
+    }
   };
 
-  setUser(mockUser);
-
-  } catch (error) {
-  console.log("Login error:", error);
-  throw error;
-  }
-};
-
   const register = async (
-  dni: string,
-  nombre: string,
-  apellido: string,
-  email: string,
-  password: string,
-  telefono: string
-): Promise<void> => {
+    dni: string,
+    nombre: string,
+    apellido: string,
+    email: string,
+    password: string,
+    telefono: string
+  ): Promise<void> => {
+    const response = await fetch("http://localhost:8080/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        dni,
+        nombre,
+        apellido,
+        email,
+        password,
+        telefono
+      })
+    });
 
-  const response = await fetch("http://localhost:8080/auth/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      dni,
-      nombre,
-      apellido,
-      email,
-      password,
-      telefono
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText);
-  }
-};
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText);
+    }
+  };
 
   const logout = () => {
-    setUser(null);
+  setUser(null);
+  localStorage.removeItem("user");
+  localStorage.removeItem("token");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        logout,
+        isAuthenticated: !!user
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
