@@ -1,6 +1,7 @@
 package com.rol;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.usuariorol.UsuarioRol;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,15 +11,14 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-//Anotaciones Lombok
 @Getter
 @Setter
 @NoArgsConstructor
 
-//Anotaciones JPA
 @Entity
 @Table(name = "rol")
 public class Rol {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_rol")
@@ -33,7 +33,12 @@ public class Rol {
     @Column(name = "fecha_baja_rol")
     private LocalDate fechaBajaRol;
 
-    @OneToMany(mappedBy = "rol", cascade = {CascadeType.ALL}, orphanRemoval = true)
+    @OneToMany(mappedBy = "rol", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<RolPermiso> rolPermisos = new ArrayList<>();
+
+    @OneToMany(mappedBy = "rol",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<UsuarioRol> usuarioRoles;
 }

@@ -1,10 +1,11 @@
 package com.usuario;
 
-import com.rol.Rol;
+import java.util.List;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.usuariorol.UsuarioRol;
 
 import java.time.LocalDateTime;
 
@@ -34,11 +35,11 @@ public class Usuario {
     @Column(name = "email_usuario", nullable = false, unique = true)
     private String emailUsuario;
 
+    @Column(name = "contrasenia_usuario", nullable = false)
+    private String contraseniaUsuario;
+
     @Column(name = "telefono_usuario", nullable = false)
     private String telefonoUsuario;
-
-    @Column(name = "google_id", nullable = false, unique = true)
-    private String googleId;
 
     @Column(name = "fecha_hora_registro_usuario", nullable = false)
     private LocalDateTime fechaHRegistroUsuario;
@@ -46,7 +47,8 @@ public class Usuario {
     @Column(name = "fecha_hora_baja_usuario")
     private LocalDateTime fechaHBajaUsuario;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_rol", nullable = false)
-    private Rol rol;
+    @OneToMany(mappedBy = "usuario",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<UsuarioRol> usuarioRoles;
 }

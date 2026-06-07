@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
-import { Heart, Mail, Lock } from 'lucide-react';
+//import { Heart, Mail, Lock } from 'lucide-react';
 import logoMesu from '../assets/images/logo.png';
 
 export function Login() {
@@ -12,21 +12,26 @@ export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    login(email, password);
-    navigate('/marketplace');
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-  const handleQuickLogin = (role: 'client' | 'owner' | 'admin') => {
-    const emails = {
-      client: 'cliente@demo.com',
-      owner: 'propietario@demo.com',
-      admin: 'admin@demo.com',
-    };
-    login(emails[role], 'demo', role);
+  try {
+    await login(email, password);
     navigate('/marketplace');
-  };
+  } catch (error) {
+    alert("Email o contraseña incorrectos");
+  }
+};
+
+  //const handleQuickLogin = (role: 'client' | 'owner' | 'admin') => {
+  //  const emails = {
+  //    client: 'cliente@demo.com',
+  //    owner: 'propietario@demo.com',
+  //    admin: 'admin@demo.com',
+  //  };
+  //  login(emails[role], 'demo', role);
+  //  navigate('/marketplace');
+  //};
 
   return (
     <div id='login' className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12 bg-gradient-to-br from-blue-50 via-white to-teal-50">
