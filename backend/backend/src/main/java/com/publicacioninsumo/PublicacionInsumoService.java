@@ -11,12 +11,14 @@ import com.publicacioninsumo.dto.PublicacionInsumoUpdateDTO;
 import com.publicacioninsumoimagen.PublicacionInsumoImagen;
 import com.tipoinsumo.TipoInsumoRepository;
 import com.tipooperacion.TipoOperacionRepository;
+import com.ubicacion.PublicacionInsumoUbicacion;
 import com.usuario.UsuarioRepository;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -149,8 +151,19 @@ public class PublicacionInsumoService {
         }
 
 
+        //===========================================
+        // 6. ASOCIACION CON LA UBICACIÓN
+        //===========================================
+        var ubicacion = new PublicacionInsumoUbicacion();
+        ubicacion.setDireccionUbicacion(createDTO.getDireccion());
+        ubicacion.setPublicacionInsumo(publicacion);
+        ubicacion.setLatitudUbicacion(createDTO.getLatitud());
+        ubicacion.setLongitudUbicacion(createDTO.getLongitud());
+        publicacion.setPublicacionInsumoUbicacion(ubicacion);
+
+
         // ==========================================
-        // 6. PERSISTENCIA Y RESPUESTA
+        // 7. PERSISTENCIA Y RESPUESTA
         // ==========================================
         try {
             PublicacionInsumo guardada = publicacionInsumoRepository.save(publicacion);
@@ -165,9 +178,13 @@ public class PublicacionInsumoService {
     //Modificar una publicación
     @CacheEvict(value = "catalogoActivo", allEntries = true)
     @Transactional
-    public PublicacionInsumoResponseDTO modificarPublicacion(Long id, PublicacionInsumoUpdateDTO updateDTO) {
+    public PublicacionInsumoResponseDTO modificarPublicacion(Long id, PublicacionInsumoUpdateDTO updateDTO, String emailUsuarioLogueado) throws AccessDeniedException {
         PublicacionInsumo publicacion = publicacionInsumoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id));
+
+        if (!publicacion.getUsuarioPropietario().getEmailUsuario().equals(emailUsuarioLogueado)) {
+            throw new AccessDeniedException("No tienes permiso para modificar esta publicación");
+        }
 
         //Setear los datos básicos modificados
         publicacion.setTituloPI(updateDTO.getTitulo());
@@ -237,10 +254,13 @@ public class PublicacionInsumoService {
     // Baja Lógica de una publicación
     @CacheEvict(value = "catalogoActivo", allEntries = true) // Limpiamos la caché para que desaparezca del frontend
     @Transactional
-    public void eliminarPublicacion(Long id) {
+    public void eliminarPublicacion(Long id, String emailUsuarioLogueado) throws AccessDeniedException {
         PublicacionInsumo publicacion = publicacionInsumoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id));
 
+        if (!publicacion.getUsuarioPropietario().getEmailUsuario().equals(emailUsuarioLogueado)) {
+            throw new AccessDeniedException("No tienes permiso para modificar esta publicación");
+        }
         // Buscamos el estado de "baja" o "inactiva"
         var estadoBaja = estadoPublicacionRepository.findByNombreEPI("ELIMINADA")
                 .orElseThrow(() -> new IllegalStateException("Estado 'ELIMINADA' no encontrado."));

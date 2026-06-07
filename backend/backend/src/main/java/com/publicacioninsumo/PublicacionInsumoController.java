@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @RestController
@@ -52,9 +53,12 @@ public class PublicacionInsumoController {
     @PutMapping("/{id}")
     public ResponseEntity<PublicacionInsumoResponseDTO> modificarPublicacion(
             @PathVariable("id") Long id,
-            @Valid @RequestBody PublicacionInsumoUpdateDTO updateDTO) {
+            @Valid @RequestBody PublicacionInsumoUpdateDTO updateDTO,
+            Authentication authentication) throws AccessDeniedException {
 
-        PublicacionInsumoResponseDTO modificada = publicacionService.modificarPublicacion(id, updateDTO);
+        String emailUsuarioLogueado = authentication.getName();
+
+        PublicacionInsumoResponseDTO modificada = publicacionService.modificarPublicacion(id, updateDTO, emailUsuarioLogueado);
 
         return ResponseEntity.ok(modificada); // Retorna 200 OK
     }
@@ -63,8 +67,10 @@ public class PublicacionInsumoController {
     // DELETE: Baja lógica de la publicación
     // ==========================================
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarPublicacion(@PathVariable("id") Long id) {
-        publicacionService.eliminarPublicacion(id);
+    public ResponseEntity<Void> eliminarPublicacion(@PathVariable("id") Long id, Authentication authentication) throws AccessDeniedException {
+        String emailUsuarioLogueado = authentication.getName();
+
+        publicacionService.eliminarPublicacion(id, emailUsuarioLogueado);
 
         return ResponseEntity.noContent().build(); // Retorna 204 No Content (Éxito, pero sin cuerpo en la respuesta)
     }
