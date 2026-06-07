@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ public class AuthService {
     private final RolRepository rolRepository;
     private final UsuarioRolRepository usuarioRolRepository;
     private final JwtService jwtService;
+
 
     public void register(RegisterRequest request) {
 
@@ -52,13 +54,21 @@ public class AuthService {
 
         usuario = usuarioRepository.save(usuario);
 
-        Rol cliente = rolRepository
+        Rol cliente;
+        Rol propietario;
+
+        try {
+        cliente = rolRepository
                 .findByNombreRol("CLIENTE")
                 .orElseThrow();
-
-        Rol propietario = rolRepository
+        propietario = rolRepository
                 .findByNombreRol("PROPIETARIO")
                 .orElseThrow();
+        } catch (Exception e) {
+            System.err.println("Error al asignar roles al usuario: " + e.getMessage());
+            throw new RuntimeException("Error al asignar roles al usuario: " + e.getMessage());
+        }
+
 
         UsuarioRol urCliente = new UsuarioRol();
         urCliente.setUsuario(usuario);
@@ -94,7 +104,18 @@ public class AuthService {
                         usuario.getEmailUsuario()
                 );
 
-        return new LoginResponse(token);
+        List<String> roles = usuario.getUsuarioRoles()
+                .stream()
+                .map(ur -> ur.getRol().getNombreRol())
+                .toList();
+
+        return new LoginResponse(
+                token,
+                usuario.getNombreUsuario(),
+                usuario.getApellidoUsuario(),
+                usuario.getEmailUsuario(),
+                roles
+        );
     }
 
 }

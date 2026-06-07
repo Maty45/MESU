@@ -2,10 +2,11 @@ package com.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record RegisterRequest( @NotBlank
-                               String dni,
+public record RegisterRequest( @NotNull
+                               Long dni,
 
                                @NotBlank
                                String nombre,
@@ -17,9 +18,9 @@ public record RegisterRequest( @NotBlank
                                @NotBlank
                                String email,
 
-                               @Size(min = 8)
+                               @Size(min = 9)
                                String password,
 
-                               @NotBlank
-                               String telefono) {
+                               @NotNull
+                               Long telefono) {
 }
