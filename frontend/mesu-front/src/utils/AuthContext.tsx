@@ -7,7 +7,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  roles: string[];
   avatar?: string;
 }
 
@@ -66,15 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: data.email,
         name: `${data.nombre} ${data.apellido}`,
         email: data.email,
-        role: data.roles.includes("ADMIN")
-          ? "admin"
-          : data.roles.includes("PROPIETARIO")
-          ? "owner"
-          : "client"
+        roles: data.roles
       };
 
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("token", data.token);
+      setUser(user);
 
     } catch (error) {
       console.log("Login error:", error);

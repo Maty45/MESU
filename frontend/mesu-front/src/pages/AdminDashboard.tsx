@@ -24,7 +24,7 @@ export function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'users' | 'reports'>('overview');
 
-  if (!user || !user.role.includes('ADMIN')) {
+  if (!user || !user.roles.includes('ADMIN')) {
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
       <div className="text-center">
