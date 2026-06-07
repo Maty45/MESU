@@ -2,7 +2,7 @@ import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 
 type UserRole = 'client' | 'owner' | 'admin';
-
+//te detesto github ojala te fundas
 interface User {
   id: string;
   name: string;
