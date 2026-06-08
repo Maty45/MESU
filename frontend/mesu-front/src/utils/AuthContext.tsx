@@ -8,6 +8,7 @@ interface User {
   name: string;
   email: string;
   roles: string[];
+  token: string; // Added token property
   avatar?: string;
 }
 
@@ -31,7 +32,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
   const saved = localStorage.getItem("user");
-  return saved ? JSON.parse(saved) : null;
+  // When initializing, also ensure the token is present if user data is loaded
+  if (saved) {
+    const parsedUser = JSON.parse(saved);
+    const token = localStorage.getItem("token");
+    if (token) {
+      return { ...parsedUser, token };
+    }
+  }
+  return null;
   });
 
   // 🟢 LOGIN REAL
@@ -60,19 +69,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = JSON.parse(body);
 
+      // Store token in localStorage
       localStorage.setItem("token", data.token);
 
-      const user: User = {
+      const loggedInUser: User = { // Renamed to avoid conflict with 'user' state
         id: data.email,
         name: `${data.nombre} ${data.apellido}`,
         email: data.email,
-        roles: data.roles
+        roles: data.roles,
+        token: data.token // Include token in the user object
       };
 
-      console.log("USUARIO A GUARDAR:", user);
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("token", data.token);
-      setUser(user);
+      console.log("USUARIO A GUARDAR:", loggedInUser);
+      localStorage.setItem("user", JSON.stringify(loggedInUser)); // Store user object with token
+      setUser(loggedInUser); // Set user state with the new user object
 
     } catch (error) {
       console.log("Login error:", error);
