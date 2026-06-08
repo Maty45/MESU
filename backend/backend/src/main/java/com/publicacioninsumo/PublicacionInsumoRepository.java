@@ -32,5 +32,17 @@ public interface PublicacionInsumoRepository extends JpaRepository<PublicacionIn
             "LEFT JOIN FETCH p.publicacionInsumoImagenes " +
             "WHERE p.idPI = :id")
     Optional<PublicacionInsumo> findByDetalleId(@Param("id") long id);
-
+ 
+    // Buscar todas las publicaciones de un propietario por su email, excluyendo las ELIMINADAS
+    @Query("SELECT DISTINCT p FROM PublicacionInsumo p " +
+            "JOIN FETCH p.condicionOperacion " +
+            "JOIN FETCH p.estadoInsumo " +
+            "JOIN FETCH p.tipoInsumo " +
+            "JOIN FETCH p.estadoPublicacionInsumo " +
+            "JOIN FETCH p.usuarioPropietario " +
+            "JOIN FETCH p.publicacionInsumoUbicacion " +
+            "LEFT JOIN FETCH p.publicacionInsumoImagenes " +
+            "WHERE p.usuarioPropietario.emailUsuario = :email " +
+            "AND p.estadoPublicacionInsumo.nombreEPI <> 'ELIMINADA'")
+    List<PublicacionInsumo> findByUsuarioPropietarioEmailUsuario(@Param("email") String email);
 }

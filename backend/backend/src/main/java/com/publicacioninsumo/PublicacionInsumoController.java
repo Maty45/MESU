@@ -32,6 +32,16 @@ public class PublicacionInsumoController {
     }
 
     // ==========================================
+    // GET: Obtener las publicaciones del propietario autenticado
+    // ==========================================
+    @GetMapping("/mis-publicaciones")
+    public ResponseEntity<List<PublicacionInsumoResponseDTO>> obtenerMisPublicaciones(Authentication authentication) {
+        String emailUsuarioLogueado = authentication.getName();
+        List<PublicacionInsumoResponseDTO> misPublicaciones = publicacionService.obtenerPublicacionesPropietario(emailUsuarioLogueado);
+        return ResponseEntity.ok(misPublicaciones);
+    }
+
+    // ==========================================
     // GET: Obtener una publicación por ID
     // ==========================================
     @GetMapping("/{id}")

@@ -280,6 +280,15 @@ public class PublicacionInsumoService {
         publicacionInsumoRepository.save(publicacion);
     }
 
+    // Obtener todas las publicaciones de un propietario
+    @Transactional(readOnly = true)
+    public List<PublicacionInsumoResponseDTO> obtenerPublicacionesPropietario(String email) {
+        List<PublicacionInsumo> publicaciones = publicacionInsumoRepository.findByUsuarioPropietarioEmailUsuario(email);
+        return publicaciones.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
     //Valida que, según el tipo de operación, la instancia de CondicionOperacion se cree correctamente
     private void validarReglasDeMontoYTiempo(String tipoOperacion, Integer monto, String unidadTiempo) {
         switch (tipoOperacion) {
@@ -365,6 +374,13 @@ public class PublicacionInsumoService {
             dto.setUrlsImagenes(publicacion.getPublicacionInsumoImagenes().stream()
                     .map(img -> img.getUrlpathPublicacionInsumoImagen())
                     .collect(Collectors.toList()));
+        }
+
+        // Mapeo de la ubicación
+        if (publicacion.getPublicacionInsumoUbicacion() != null) {
+            dto.setDireccion(publicacion.getPublicacionInsumoUbicacion().getDireccionUbicacion());
+            dto.setLongitud(publicacion.getPublicacionInsumoUbicacion().getLongitudUbicacion());
+            dto.setLatitud(publicacion.getPublicacionInsumoUbicacion().getLatitudUbicacion());
         }
 
         return dto;

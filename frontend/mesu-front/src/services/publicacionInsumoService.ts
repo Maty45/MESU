@@ -7,6 +7,11 @@ export const publicacionInsumoService = {
     return response.json();
   },
 
+  getMisPublicaciones: async (): Promise<PublicacionInsumoResponse[]> => {
+    const response = await fetchApi('/api/publicaciones/mis-publicaciones');
+    return response.json();
+  },
+
   getById: async (id: number): Promise<PublicacionInsumoResponse> => {
     const response = await fetchApi(`/api/publicaciones/${id}`);
     return response.json();

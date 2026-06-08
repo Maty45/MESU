@@ -36,7 +36,7 @@ export function OwnerDashboard() {
   const fetchPublicaciones = async () => {
     try {
       setLoading(true);
-      const data = await publicacionInsumoService.getAll();
+      const data = await publicacionInsumoService.getMisPublicaciones();
       setPublicaciones(data);
     } catch (err) {
       console.error('Error al cargar publicaciones en owner dashboard:', err);
@@ -71,9 +71,7 @@ export function OwnerDashboard() {
     );
   }
 
-  const userProducts = publicaciones.filter(
-    (p) => `${p.nombreUsuario} ${p.apellidoUsuario}`.trim().toLowerCase() === user?.name.trim().toLowerCase()
-  );
+  const userProducts = publicaciones;
   const userOperations = mockOperations.filter((op) => op.ownerId === 'owner1');
 
   const availableProducts = userProducts.filter((p) => p.nombreEstadoPublicacion.toUpperCase() === 'ACTIVA').length;
