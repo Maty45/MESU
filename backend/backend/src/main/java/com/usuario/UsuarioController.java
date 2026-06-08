@@ -1,7 +1,10 @@
 package com.usuario;
 
+import com.usuario.dto.UsuarioDTO; // Import UsuarioDTO
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List; // Import List
 
 @RestController
 @RequestMapping("/api/usuario")
@@ -13,12 +16,12 @@ public class UsuarioController {
     }
 
     @GetMapping
-    public ResponseEntity getAllUser() {
+    public ResponseEntity<List<UsuarioDTO>> getAllUser() { // Changed return type to List<UsuarioDTO>
         try {
             return ResponseEntity.ok(service.getAllUser());
         } catch (Exception e) {
             System.err.println("Error al obtener los usuarios: " + e.getMessage());
-            return ResponseEntity.status(500).body("Error al obtener los usuarios: " + e.getMessage());
+            return ResponseEntity.status(500).body(null); // Return null or an empty list in case of error
         }
     }
 
@@ -56,7 +59,4 @@ public class UsuarioController {
             throw new RuntimeException("Error al eliminar el usuario: " + e.getMessage());
         }
     }
-
-
-
 }

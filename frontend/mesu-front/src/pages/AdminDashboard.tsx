@@ -17,26 +17,54 @@ import {
   ShieldCheck,
   DollarSign,
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'; // Import useEffect
+import { useEffect } from 'react';
+
+// Define the DTO types based on backend structure
+interface RolDTO {
+  idRol: number;
+  nombreRol: string;
+  fechaAltaRol: string; // LocalDate
+  fechaBajaRol: string | null; // LocalDate
+}
+
+interface UsuarioRolDTO {
+  rol: RolDTO;
+}
+
+interface UsuarioDTO {
+  idUsuario: number;
+  dniUsuario: number;
+  nombreUsuario: string;
+  apellidoUsuario: string;
+  emailUsuario: string;
+  telefonoUsuario: string;
+  fechaHRegistroUsuario: string; // LocalDate
+  fechaHBajaUsuario: string | null; // LocalDate
+  usuarioRoles: UsuarioRolDTO[];
+}
 
 export function AdminDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'users' | 'reports'>('overview');
+  const [backendUsers, setBackendUsers] = useState<UsuarioDTO[]>([]); // State to store fetched users
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [errorUsers, setErrorUsers] = useState<string | null>(null);
 
   if (!user || !user.roles.includes('ADMIN')) {
-  return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-slate-900 mb-4">Acceso denegado</h2>
-        <p className="text-slate-600 mb-6">Esta página es solo para administradores</p>
-        <Button onClick={() => navigate('/marketplace')}>Ir al Marketplace</Button>
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">Acceso denegado</h2>
+          <p className="text-slate-600 mb-6">Esta página es solo para administradores</p>
+          <Button onClick={() => navigate('/marketplace')}>Ir al Marketplace</Button>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-  const totalUsers = 156;
+  const totalUsers = backendUsers.length; // Use fetched users count
   const totalProducts = mockProducts.length;
   const totalOperations = mockOperations.length;
   const pendingReports = mockReports.filter((r) => r.status === 'pending').length;
@@ -56,6 +84,30 @@ export function AdminDashboard() {
 
   const COLORS = ['#3b82f6', '#14b8a6', '#8b5cf6', '#f59e0b', '#ef4444', '#6b7280'];
 
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    setErrorUsers(null);
+    try {
+      const response = await fetch('http://localhost:8080/api/usuario'); // Assuming backend runs on 8080
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data: UsuarioDTO[] = await response.json();
+      setBackendUsers(data);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setErrorUsers("Error al cargar los usuarios.");
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      fetchUsers();
+    }
+  }, [activeTab]);
+
   const handleDeleteProduct = (productId: string) => {
     if (confirm('¿Estás seguro de eliminar este producto?')) {
       // usar productId para evitar warning de variable no usada
@@ -64,9 +116,24 @@ export function AdminDashboard() {
     }
   };
 
-  const handleDeleteUser = () => {
-    if (confirm('¿Estás seguro de eliminar este usuario?')) {
-      alert('Usuario eliminado del sistema.');
+
+  const handleDeleteUser = async (dni: number) => { 
+    if (confirm(`¿Estás seguro de eliminar al usuario con DNI: ${dni}?`)) {
+      try {
+        const response = await fetch(`http://localhost:8080/api/usuario/delete?dni=${dni}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        setBackendUsers((prevUsers) => prevUsers.filter((user) => user.dniUsuario !== dni));
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        setErrorUsers("Error al eliminar el usuario.");
+      }
+
+      console.log('Eliminar usuario con DNI:', dni);
+      alert(`Usuario con DNI ${dni} eliminado del sistema.`);
     }
   };
 
@@ -326,60 +393,69 @@ export function AdminDashboard() {
               <h2 className="text-xl font-semibold text-slate-900">Gestión de Usuarios</h2>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Usuario</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Email</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Rol</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Registro</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Estado</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { id: '1', name: 'María González', email: 'maria@example.com', role: 'owner', date: '2025-01-15', status: 'active' },
-                      { id: '2', name: 'Carlos Rodríguez', email: 'carlos@example.com', role: 'owner', date: '2025-02-20', status: 'active' },
-                      { id: '3', name: 'Ana Martínez', email: 'ana@example.com', role: 'owner', date: '2025-03-10', status: 'active' },
-                      { id: '4', name: 'Juan Pérez', email: 'juan@example.com', role: 'client', date: '2025-04-05', status: 'active' },
-                      { id: '5', name: 'Laura Fernández', email: 'laura@example.com', role: 'client', date: '2025-04-18', status: 'active' },
-                    ].map((user) => (
-                      <tr key={user.id} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
-                              {user.name.charAt(0)}
-                            </div>
-                            <div className="font-medium text-slate-900">{user.name}</div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-slate-600">{user.email}</td>
-                        <td className="py-3 px-4">
-                          <Badge variant={user.role === 'owner' ? 'info' : 'default'}>
-                            {user.role === 'owner' ? 'Propietario' : 'Cliente'}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 text-sm text-slate-600">
-                          {new Date(user.date).toLocaleDateString('es-AR')}
-                        </td>
-                        <td className="py-3 px-4">
-                          <Badge variant="success">Activo</Badge>
-                        </td>
-                        <td className="py-3 px-4">
-                          <button
-                            onClick={handleDeleteUser}
-                            className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded transition"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
+              {loadingUsers && <div className="text-center py-8 text-slate-600">Cargando usuarios...</div>}
+              {errorUsers && <div className="text-center py-8 text-red-600">{errorUsers}</div>}
+              {!loadingUsers && !errorUsers && backendUsers.length === 0 && (
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">No se encontraron usuarios</h3>
+                  <p className="text-slate-600">Intenta recargar la página o verifica la conexión con el backend.</p>
+                </div>
+              )}
+              {!loadingUsers && !errorUsers && backendUsers.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Usuario</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Email</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Rol</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Registro</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Estado</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {backendUsers.map((user) => (
+                        <tr key={user.idUsuario} className="border-b border-slate-100 hover:bg-slate-50">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
+                                {user.nombreUsuario.charAt(0)}
+                              </div>
+                              <div className="font-medium text-slate-900">{user.nombreUsuario} {user.apellidoUsuario}</div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-slate-600">{user.emailUsuario}</td>
+                          <td className="py-3 px-4">
+                            {user.usuarioRoles.map((ur, index) => (
+                              <Badge key={index} variant={ur.rol.nombreRol === 'ADMIN' ? 'danger' : ur.rol.nombreRol === 'PROPIETARIO' ? 'info' : 'default'}>
+                                {ur.rol.nombreRol}
+                              </Badge>
+                            ))}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-slate-600">
+                            {new Date(user.fechaHRegistroUsuario).toLocaleDateString('es-AR')}
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge variant={user.fechaHBajaUsuario ? 'danger' : 'success'}>
+                              {user.fechaHBajaUsuario ? 'Inactivo' : 'Activo'}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={() => handleDeleteUser(user.dniUsuario)}
+                              className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded transition"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

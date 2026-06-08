@@ -1,5 +1,6 @@
 package com.rol;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.usuariorol.UsuarioRol;
 import jakarta.persistence.*;
@@ -40,5 +41,6 @@ public class Rol {
     @OneToMany(mappedBy = "rol",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
+    @JsonManagedReference
     private List<UsuarioRol> usuarioRoles;
 }
