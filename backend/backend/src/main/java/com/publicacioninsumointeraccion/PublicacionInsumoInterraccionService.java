@@ -11,6 +11,8 @@ import com.publicacioninsumointeraccion.dto.ConcretarInteraccionRequestDTO;
 import com.publicacioninsumointeraccion.dto.PublicacionInsumoInteraccionResponseDTO;
 import com.tipointeraccion.TipoInteraccion;
 import com.tipointeraccion.TipoInteraccionRepository;
+import com.usuario.Usuario;
+import com.usuario.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,18 +29,21 @@ public class PublicacionInsumoInterraccionService {
     private final AlquilerInsumoRepository alquilerInsumoRepository;
     private final TipoInteraccionRepository tipoInteraccionRepository;
     private final EstadoPublicacionInsumoRepository estadoPublicacionRepository;
+    private final UsuarioRepository usuarioRepository;
 
     public PublicacionInsumoInterraccionService(
             PublicacionInsumoInteraccionRepository interaccionRepository,
             PublicacionInsumoRepository publicacionInsumoRepository,
             AlquilerInsumoRepository alquilerInsumoRepository,
             TipoInteraccionRepository tipoInteraccionRepository,
-            EstadoPublicacionInsumoRepository estadoPublicacionRepository) {
+            EstadoPublicacionInsumoRepository estadoPublicacionRepository,
+            UsuarioRepository usuarioRepository) {
         this.interaccionRepository = interaccionRepository;
         this.publicacionInsumoRepository = publicacionInsumoRepository;
         this.alquilerInsumoRepository = alquilerInsumoRepository;
         this.tipoInteraccionRepository = tipoInteraccionRepository;
         this.estadoPublicacionRepository = estadoPublicacionRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     // Obtener todas las interacciones de una publicación seleccionada (validando propiedad)
@@ -57,19 +62,19 @@ public class PublicacionInsumoInterraccionService {
                 .collect(Collectors.toList());
     }
 
-    // Concretar un contacto (tipo CONTACTO) a VENTA, DONACION o ALQUILER
+    // Concretar un contacto (tipo CONTACTO) creando una NUEVA interacción (VENTA, DONACION o ALQUILER) con el mismo cliente
     @Transactional
     public PublicacionInsumoInteraccionResponseDTO concretarContacto(Long idInteraccion, ConcretarInteraccionRequestDTO requestDTO, String emailUsuarioLogueado) throws AccessDeniedException {
-        PublicacionInsumoInteraccion interaccion = interaccionRepository.findById(idInteraccion)
+        PublicacionInsumoInteraccion contactoOriginal = interaccionRepository.findById(idInteraccion)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la interacción con ID: " + idInteraccion));
 
-        PublicacionInsumo publicacion = interaccion.getPublicacionInsumo();
+        PublicacionInsumo publicacion = contactoOriginal.getPublicacionInsumo();
         if (!publicacion.getUsuarioPropietario().getEmailUsuario().equals(emailUsuarioLogueado)) {
             throw new AccessDeniedException("No tienes permiso para modificar esta interacción");
         }
 
         // Validar que sea de tipo CONTACTO
-        if (!interaccion.getTipoInteraccion().getNombreTipoInteraccion().equalsIgnoreCase("CONTACTO")) {
+        if (!contactoOriginal.getTipoInteraccion().getNombreTipoInteraccion().equalsIgnoreCase("CONTACTO")) {
             throw new IllegalArgumentException("Regla de Negocio: Solo se pueden concretar interacciones que estén en estado CONTACTO.");
         }
 
@@ -85,6 +90,13 @@ public class PublicacionInsumoInterraccionService {
         // Buscar el nuevo tipo de interacción
         TipoInteraccion nuevoTipo = tipoInteraccionRepository.findByNombreTipoInteraccion(concrecionSolicitada)
                 .orElseThrow(() -> new ResourceNotFoundException("Tipo de interacción '" + concrecionSolicitada + "' no encontrado en el sistema."));
+
+        // Crear NUEVA interacción de concreción con el mismo cliente del contacto
+        PublicacionInsumoInteraccion nuevaInteraccion = new PublicacionInsumoInteraccion();
+        nuevaInteraccion.setFechaHPII(LocalDateTime.now());
+        nuevaInteraccion.setPublicacionInsumo(publicacion);
+        nuevaInteraccion.setUsuarioCliente(contactoOriginal.getUsuarioCliente());
+        nuevaInteraccion.setTipoInteraccion(nuevoTipo);
 
         // Procesar según el tipo
         if (concrecionSolicitada.equals("ALQUILER")) {
@@ -107,7 +119,7 @@ public class PublicacionInsumoInterraccionService {
             alquiler.setPublicacionInsumo(publicacion);
             
             AlquilerInsumo guardado = alquilerInsumoRepository.save(alquiler);
-            interaccion.setAlquilerInsumo(guardado);
+            nuevaInteraccion.setAlquilerInsumo(guardado);
 
             // Cambiar publicación a ALQUILADA
             EstadoPublicacionInsumo estadoAlquilada = estadoPublicacionRepository.findByNombreEPI("ALQUILADA")
@@ -121,14 +133,34 @@ public class PublicacionInsumoInterraccionService {
             publicacion.setEstadoPublicacionInsumo(estadoFinalizada);
         }
 
-        // Actualizar el tipo de interacción y persistir
-        interaccion.setTipoInteraccion(nuevoTipo);
-        interaccion.setFechaHPII(LocalDateTime.now());
-        
+        // Actualizar la fecha de última actualización de la publicación
+        publicacion.setFechaUltimaActualizacionPI(LocalDateTime.now());
         publicacionInsumoRepository.save(publicacion);
-        PublicacionInsumoInteraccion actualizada = interaccionRepository.save(interaccion);
-        
-        return convertToDTO(actualizada);
+
+        PublicacionInsumoInteraccion guardada = interaccionRepository.save(nuevaInteraccion);
+        return convertToDTO(guardada);
+    }
+
+    // Registrar una interacción de tipo CONTACTO
+    @Transactional
+    public PublicacionInsumoInteraccionResponseDTO registrarContacto(Long idPublicacion, String emailUsuarioLogueado) {
+        PublicacionInsumo publicacion = publicacionInsumoRepository.findById(idPublicacion)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + idPublicacion));
+
+        Usuario cliente = usuarioRepository.findByEmailUsuario(emailUsuarioLogueado)
+                .orElseThrow(() -> new IllegalArgumentException("No se encontró al usuario cliente con email: " + emailUsuarioLogueado));
+
+        TipoInteraccion tipoContacto = tipoInteraccionRepository.findByNombreTipoInteraccion("CONTACTO")
+                .orElseThrow(() -> new ResourceNotFoundException("Tipo de interacción 'CONTACTO' no encontrado en el sistema."));
+
+        PublicacionInsumoInteraccion interaccion = new PublicacionInsumoInteraccion();
+        interaccion.setFechaHPII(LocalDateTime.now());
+        interaccion.setPublicacionInsumo(publicacion);
+        interaccion.setUsuarioCliente(cliente);
+        interaccion.setTipoInteraccion(tipoContacto);
+
+        PublicacionInsumoInteraccion guardada = interaccionRepository.save(interaccion);
+        return convertToDTO(guardada);
     }
 
     private PublicacionInsumoInteraccionResponseDTO convertToDTO(PublicacionInsumoInteraccion interaccion) {

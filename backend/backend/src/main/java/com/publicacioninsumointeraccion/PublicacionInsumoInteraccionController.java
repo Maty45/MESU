@@ -31,6 +31,17 @@ public class PublicacionInsumoInteraccionController {
         return ResponseEntity.ok(interacciones);
     }
 
+    // POST: Registrar una nueva interacción de tipo CONTACTO
+    @PostMapping("/publicacion/{idPublicacion}/contacto")
+    public ResponseEntity<PublicacionInsumoInteraccionResponseDTO> registrarContacto(
+            @PathVariable("idPublicacion") Long idPublicacion,
+            Authentication authentication) {
+        
+        String emailUsuarioLogueado = authentication.getName();
+        PublicacionInsumoInteraccionResponseDTO response = interaccionService.registrarContacto(idPublicacion, emailUsuarioLogueado);
+        return ResponseEntity.ok(response);
+    }
+
     // POST: Concretar una interacción de tipo CONTACTO a VENTA, DONACIÓN o ALQUILER
     @PostMapping("/{idInteraccion}/concretar")
     public ResponseEntity<PublicacionInsumoInteraccionResponseDTO> concretarContacto(
