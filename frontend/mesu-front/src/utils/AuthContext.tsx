@@ -2,12 +2,12 @@ import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 
 type UserRole = 'client' | 'owner' | 'admin';
-
+//te detesto github ojala te fundas
 interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  roles: string[];
   avatar?: string;
 }
 
@@ -66,15 +66,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: data.email,
         name: `${data.nombre} ${data.apellido}`,
         email: data.email,
-        role: data.roles.includes("ADMIN")
-          ? "admin"
-          : data.roles.includes("PROPIETARIO")
-          ? "owner"
-          : "client"
+        roles: data.roles
       };
 
+      console.log("USUARIO A GUARDAR:", user);
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("token", data.token);
+      setUser(user);
 
     } catch (error) {
       console.log("Login error:", error);

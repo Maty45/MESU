@@ -20,17 +20,23 @@ export function CreateProduct() {
   const [condition, setCondition] = useState<'new' | 'like-new' | 'good' | 'fair'>('good');
   const [images, setImages] = useState<string[]>([]);
 
-  if (!user || user.role !== 'owner') {
-    return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">Acceso denegado</h2>
-          <p className="text-slate-600 mb-6">Debes ser propietario para publicar productos</p>
-          <Button onClick={() => navigate('/marketplace')}>Volver al Marketplace</Button>
-        </div>
+  if (!user || !user.roles.includes('PROPIETARIO')) {
+  return (
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">
+          Acceso denegado
+        </h2>
+        <p className="text-slate-600 mb-6">
+          Debes ser propietario para publicar productos
+        </p>
+        <Button onClick={() => navigate('/marketplace')}>
+          Volver al Marketplace
+        </Button>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
