@@ -1,6 +1,6 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { mockProducts, mockOperations, operationTypeLabels } from '../data/mockData';
+import { mockOperations, operationTypeLabels } from '../data/mockData';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -16,66 +16,96 @@ import {
   AlertTriangle,
   AlertCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { publicacionInsumoService } from '../services/publicacionInsumoService';
+import type { PublicacionInsumoResponse } from '../types/publicacionInsumo';
 
 export function OwnerDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [publicaciones, setPublicaciones] = useState<PublicacionInsumoResponse[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportClientName, setReportClientName] = useState('');
   const [reportReason, setReportReason] = useState('');
 
+  useEffect(() => {
+    fetchPublicaciones();
+  }, []);
+
+  const fetchPublicaciones = async () => {
+    try {
+      setLoading(true);
+      const data = await publicacionInsumoService.getAll();
+      setPublicaciones(data);
+    } catch (err) {
+      console.error('Error al cargar publicaciones en owner dashboard:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!user || !user.roles.includes('PROPIETARIO')) {
-  return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-slate-900 mb-4">
-          Acceso denegado
-        </h2>
-        <p className="text-slate-600 mb-6">
-          Esta página es solo para propietarios
-        </p>
-        <Button onClick={() => navigate('/marketplace')}>
-          Ir al Marketplace
-        </Button>
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">
+            Acceso denegado
+          </h2>
+          <p className="text-slate-600 mb-6">
+            Esta página es solo para propietarios
+          </p>
+          <Button onClick={() => navigate('/marketplace')}>
+            Ir al Marketplace
+          </Button>
+        </div>
       </div>
-    </div>
-  );
+    );
   }
 
-  const userProducts = mockProducts.filter((p) => p.ownerId === 'owner1');
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-slate-50">
+        <div className="text-slate-500 font-medium">Cargando panel...</div>
+      </div>
+    );
+  }
+
+  const userProducts = publicaciones.filter(
+    (p) => `${p.nombreUsuario} ${p.apellidoUsuario}`.trim().toLowerCase() === user?.name.trim().toLowerCase()
+  );
   const userOperations = mockOperations.filter((op) => op.ownerId === 'owner1');
 
-  const availableProducts = userProducts.filter((p) => p.status === 'available').length;
+  const availableProducts = userProducts.filter((p) => p.nombreEstadoPublicacion.toUpperCase() === 'ACTIVA').length;
   const totalRevenue = userOperations
     .filter((op) => op.status === 'completed')
     .reduce((sum, op) => sum + (op.amount || 0), 0);
 
-  const handleDeleteProduct = (productId: string) => {
-    if (confirm('¿Estás seguro de eliminar esta publicación?')) {
-      console.log('Eliminar producto:', productId);
-      alert(`Producto ${productId} eliminado. En una aplicación real, esto se eliminaría de la base de datos.`);
+  const handleDeleteProduct = async (productId: number) => {
+    if (!confirm('¿Estás seguro de eliminar esta publicación?')) return;
+    try {
+      await publicacionInsumoService.delete(productId);
+      await fetchPublicaciones();
+    } catch (err: any) {
+      alert('Error al eliminar: ' + err.message);
     }
   };
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      available: 'success' as const,
-      reserved: 'warning' as const,
-      rented: 'info' as const,
-      sold: 'default' as const,
-    };
-    return variants[status as keyof typeof variants] || 'default';
+    const s = status.toUpperCase();
+    if (s === 'ACTIVA') return 'success';
+    if (s === 'ALQUILADA') return 'info';
+    if (s === 'FINALIZADA') return 'warning';
+    return 'default';
   };
 
   const getStatusLabel = (status: string) => {
-    const labels = {
-      available: 'Disponible',
-      reserved: 'Reservado',
-      rented: 'Alquilado',
-      sold: 'Vendido',
-    };
-    return labels[status as keyof typeof labels] || status;
+    const s = status.toUpperCase();
+    if (s === 'ACTIVA') return 'Activa';
+    if (s === 'ALQUILADA') return 'Alquilada';
+    if (s === 'FINALIZADA') return 'Finalizada';
+    if (s === 'ELIMINADA') return 'Eliminada';
+    return status;
   };
 
   const handleReportClient = (clientName: string) => {
@@ -259,25 +289,31 @@ export function OwnerDashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {userProducts.map((product) => (
-                  <div key={product.id} className="border border-slate-200 rounded-lg overflow-hidden hover:shadow-md transition">
+                  <div key={product.id} className="border border-slate-200 rounded-lg overflow-hidden hover:shadow-md transition bg-white">
                     <div className="aspect-square bg-slate-100">
-                      <img
-                        src={product.images[0]}
-                        alt={product.title}
-                        className="w-full h-full object-cover"
-                      />
+                      {product.urlsImagenes && product.urlsImagenes.length > 0 ? (
+                        <img
+                          src={product.urlsImagenes[0]}
+                          alt={product.titulo}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50">
+                          Sin Imagen
+                        </div>
+                      )}
                     </div>
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-semibold text-slate-900 flex-1 line-clamp-1">
-                          {product.title}
+                          {product.titulo}
                         </h3>
-                        <Badge variant={getStatusBadge(product.status)}>
-                          {getStatusLabel(product.status)}
+                        <Badge variant={getStatusBadge(product.nombreEstadoPublicacion)}>
+                          {getStatusLabel(product.nombreEstadoPublicacion)}
                         </Badge>
                       </div>
                       <p className="text-sm text-slate-600 line-clamp-2 mb-3">
-                        {product.description}
+                        {product.descripcion}
                       </p>
                       <div className="flex items-center gap-2">
                         <Link to={`/product/${product.id}`} className="flex-1">
@@ -286,7 +322,10 @@ export function OwnerDashboard() {
                             Ver
                           </Button>
                         </Link>
-                        <button className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded transition">
+                        <button 
+                          onClick={() => navigate(`/publicacion-insumo/editar/${product.id}`)}
+                          className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button

@@ -1,5 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { mockProducts, categoryLabels, operationTypeLabels, conditionLabels } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { publicacionInsumoService } from '../services/publicacionInsumoService';
+import type { PublicacionInsumoResponse } from '../types/publicacionInsumo';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
@@ -15,21 +17,50 @@ import {
   Heart,
   Share2,
 } from 'lucide-react';
-import { useState } from 'react';
 
 export function ProductDetail() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const [product, setProduct] = useState<PublicacionInsumoResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [showContactModal, setShowContactModal] = useState(false);
   const [message, setMessage] = useState('');
   const [showConfirmReportModal, setShowConfirmReportModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
 
-  const product = mockProducts.find((p) => p.id === id);
+  useEffect(() => {
+    if (id) {
+      fetchProduct(parseInt(id));
+    }
+  }, [id]);
 
-  if (!product) {
+  const fetchProduct = async (productId: number) => {
+    try {
+      setLoading(true);
+      const data = await publicacionInsumoService.getById(productId);
+      setProduct(data);
+      setError(null);
+    } catch (err: any) {
+      console.error('Error al cargar la publicación en detalle:', err);
+      setError('Producto no encontrado');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-slate-50">
+        <div className="text-slate-500 font-medium">Cargando producto...</div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
         <div className="text-center">
@@ -40,6 +71,13 @@ export function ProductDetail() {
     );
   }
 
+  const isDonation = product.nombreTipoOperacion.toUpperCase().includes('DONACION');
+  const isRental = product.nombreTipoOperacion.toUpperCase().includes('ALQUILER');
+
+  const ownerName = product.nombreUsuario && product.apellidoUsuario
+    ? `${product.nombreUsuario} ${product.apellidoUsuario}`
+    : 'Usuario MESU';
+
   const handleContact = () => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -49,7 +87,7 @@ export function ProductDetail() {
   };
 
   const handleSendMessage = () => {
-    alert('Mensaje enviado al propietario. Recibirás una respuesta pronto.');
+    alert(`Mensaje enviado al propietario. Recibirás una respuesta pronto.`);
     setShowContactModal(false);
     setMessage('');
   };
@@ -91,19 +129,25 @@ export function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
             <div className="aspect-square bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 mb-4">
-              <img
-                src={product.images[0]}
-                alt={product.title}
-                className="w-full h-full object-cover"
-              />
+              {product.urlsImagenes && product.urlsImagenes.length > 0 ? (
+                <img
+                  src={product.urlsImagenes[0]}
+                  alt={product.titulo}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-400">
+                  Sin Imagen
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3">
-              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">
                 <Heart className="w-4 h-4" />
                 Guardar
               </button>
-              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">
                 <Share2 className="w-4 h-4" />
                 Compartir
               </button>
@@ -114,50 +158,50 @@ export function ProductDetail() {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <Badge variant={product.operationType === 'donation' ? 'success' : product.operationType === 'rental' ? 'info' : 'warning'} className="mb-3">
-                    {operationTypeLabels[product.operationType ?? 'sale']}
+                  <Badge variant={isDonation ? 'success' : isRental ? 'info' : 'warning'} className="mb-3">
+                    {product.nombreTipoOperacion}
                   </Badge>
-                  <h1 className="text-3xl font-bold text-slate-900 mb-2">{product.title}</h1>
+                  <h1 className="text-3xl font-bold text-slate-900 mb-2">{product.titulo}</h1>
                   <div className="flex items-center gap-4 text-sm text-slate-600">
                     <span className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
-                      {product.location}
+                      {product.direccion}
                     </span>
                     <span className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      {new Date(product.createdAt).toLocaleDateString('es-AR')}
+                      {new Date(product.fecha).toLocaleDateString('es-AR')}
                     </span>
                   </div>
                 </div>
               </div>
 
               <div className="border-t border-b border-slate-200 py-4 my-6">
-                {product.operationType === 'donation' ? (
+                {isDonation ? (
                   <div className="text-3xl font-bold text-green-600">Gratis</div>
-                ) : product.operationType === 'rental' ? (
+                ) : isRental ? (
                   <div>
-                    <div className="text-3xl font-bold text-blue-600">${product.pricePerDay}</div>
-                    <div className="text-sm text-slate-600 mt-1">por día</div>
+                    <div className="text-3xl font-bold text-blue-600">${product.monto}</div>
+                    <div className="text-sm text-slate-600 mt-1">por {product.unidadTiempo?.toLowerCase() || 'día'}</div>
                   </div>
                 ) : (
-                  <div className="text-3xl font-bold text-purple-600">${product.price?.toLocaleString()}</div>
+                  <div className="text-3xl font-bold text-purple-600">${product.monto?.toLocaleString()}</div>
                 )}
               </div>
 
               <h2 className="font-semibold text-slate-900 mb-2">Descripción</h2>
-              <p className="text-slate-600 mb-6 leading-relaxed">{product.description}</p>
+              <p className="text-slate-600 mb-6 leading-relaxed">{product.descripcion}</p>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
                   <div className="text-sm text-slate-500 mb-1">Categoría</div>
                   <div className="flex items-center gap-2">
                     <Package className="w-4 h-4 text-slate-400" />
-                    <span className="font-medium text-slate-900">{categoryLabels[product.category]}</span>
+                    <span className="font-medium text-slate-900">{product.nombreTipoInsumo}</span>
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-slate-500 mb-1">Estado</div>
-                  <span className="font-medium text-slate-900">{conditionLabels[product.condition ?? 'good']}</span>
+                  <span className="font-medium text-slate-900">{product.nombreEstadoInsumo}</span>
                 </div>
               </div>
 
@@ -186,15 +230,15 @@ export function ProductDetail() {
               <CardContent>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
-                    {product.ownerName.charAt(0)}
+                    {ownerName.charAt(0)}
                   </div>
                   <div>
-                    <div className="font-medium text-slate-900">{product.ownerName}</div>
+                    <div className="font-medium text-slate-900">{ownerName}</div>
                     <div className="text-sm text-slate-500">Propietario verificado</div>
                   </div>
                 </div>
                 <div className="text-sm text-slate-600">
-                  Miembro desde 2025 • 12 productos publicados
+                  Miembro de MESU • Productos ortopédicos verificados
                 </div>
               </CardContent>
             </Card>
@@ -207,7 +251,7 @@ export function ProductDetail() {
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Contactar al propietario</h2>
             <p className="text-slate-600 mb-4">
-              Envía un mensaje a {product.ownerName} sobre "{product.title}"
+              Envía un mensaje a {ownerName} sobre "{product.titulo}"
             </p>
             <textarea
               value={message}
@@ -255,7 +299,7 @@ export function ProductDetail() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Reportar Publicación</h2>
-            <p className="text-slate-600 mb-4">{product.title}</p>
+            <p className="text-slate-600 mb-4">{product.titulo}</p>
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Ingrese aquí la razón de su reporte

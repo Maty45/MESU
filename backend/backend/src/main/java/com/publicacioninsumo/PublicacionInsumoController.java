@@ -32,6 +32,15 @@ public class PublicacionInsumoController {
     }
 
     // ==========================================
+    // GET: Obtener una publicación por ID
+    // ==========================================
+    @GetMapping("/{id}")
+    public ResponseEntity<PublicacionInsumoResponseDTO> obtenerPorId(@PathVariable("id") Long id) {
+        PublicacionInsumoResponseDTO publicacion = publicacionService.obtenerPorId(id);
+        return ResponseEntity.ok(publicacion);
+    }
+
+    // ==========================================
     // POST: Crear una nueva publicación
     // ==========================================
     @PostMapping

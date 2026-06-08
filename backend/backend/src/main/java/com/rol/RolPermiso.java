@@ -1,6 +1,6 @@
 package com.rol;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.permiso.Permiso;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -30,7 +30,7 @@ public class RolPermiso {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_rol", nullable = false)
-    @JsonManagedReference
+    @JsonBackReference
     private Rol rol;
 
     @ManyToOne(fetch = FetchType.LAZY)

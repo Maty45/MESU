@@ -1,93 +1,68 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Card } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-// Input removed (unused) to avoid lint/TS warnings
 import { Search, SlidersHorizontal, MapPin, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
-// ----- Tipos y datos de ejemplo -----
-type ProductCategory = 'wheelchair' | 'walker' | 'bath' | 'other';
-type OperationType = 'donation' | 'rental' | 'sale';
-
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  category: ProductCategory;
-  operationType: OperationType;
-  status: 'available' | 'unavailable';
-  images: string[];
-  location: string;
-  pricePerDay?: number;
-  price?: number;
-}
-
-const categoryLabels: Record<ProductCategory, string> = {
-  wheelchair: 'Sillas de ruedas',
-  walker: 'Andadores',
-  bath: 'Ayudas de baño',
-  other: 'Otros',
-};
-
-const operationTypeLabels: Record<OperationType, string> = {
-  donation: 'Donación',
-  rental: 'Alquiler',
-  sale: 'Venta',
-};
-
-// Datos de ejemplo minimalistas para evitar errores de referencia.
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    title: 'Silla de ruedas plegable',
-    description: 'Silla ligera, ideal para transporte.',
-    category: 'wheelchair',
-    operationType: 'rental',
-    status: 'available',
-    images: ['/images/wheelchair.jpg'],
-    location: 'Buenos Aires',
-    pricePerDay: 300,
-  },
-  {
-    id: '2',
-    title: 'Andador ajustable',
-    description: 'Andador con ruedas y frenos.',
-    category: 'walker',
-    operationType: 'sale',
-    status: 'available',
-    images: ['/images/walker.jpg'],
-    location: 'Córdoba',
-    price: 15000,
-  },
-];
+import { publicacionInsumoService } from '../services/publicacionInsumoService';
+import { diccionarioService, type ParametricOption } from '../services/diccionarioService';
+import type { PublicacionInsumoResponse } from '../types/publicacionInsumo';
 
 export function Marketplace() {
   const { user } = useAuth();
+  const [publicaciones, setPublicaciones] = useState<PublicacionInsumoResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [tiposInsumo, setTiposInsumo] = useState<ParametricOption[]>([]);
+  const [tiposOperacion, setTiposOperacion] = useState<ParametricOption[]>([]);
+  
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState<ProductCategory | 'all'>('all');
-  const [filterOperation, setFilterOperation] = useState<OperationType | 'all'>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterOperation, setFilterOperation] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredProducts = mockProducts.filter((product) => {
-    const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === 'all' || product.category === filterCategory;
-    const matchesOperation = filterOperation === 'all' || product.operationType === filterOperation;
-    const isAvailable = product.status === 'available';
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [pubs, categories, operations] = await Promise.all([
+          publicacionInsumoService.getAll(),
+          diccionarioService.getTiposInsumo(),
+          diccionarioService.getTiposOperacion()
+        ]);
+        setPublicaciones(pubs);
+        setTiposInsumo(categories);
+        setTiposOperacion(operations);
+        setError(null);
+      } catch (err: any) {
+        console.error('Error al cargar datos del marketplace:', err);
+        setError('Error al cargar las publicaciones del marketplace');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return matchesSearch && matchesCategory && matchesOperation && isAvailable;
+    loadData();
+  }, []);
+
+  const filteredProducts = publicaciones.filter((product) => {
+    const matchesSearch = product.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          product.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filterCategory === 'all' || product.nombreTipoInsumo === filterCategory;
+    const matchesOperation = filterOperation === 'all' || product.nombreTipoOperacion === filterOperation;
+    const isActive = product.nombreEstadoPublicacion.toUpperCase() === 'ACTIVA';
+
+    return matchesSearch && matchesCategory && matchesOperation && isActive;
   });
 
-  const getOperationBadge = (type: OperationType) => {
-    const variants = {
-      donation: 'success' as const,
-      rental: 'info' as const,
-      sale: 'warning' as const,
-    };
-    return variants[type];
-  };
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-slate-50">
+        <div className="text-slate-500 font-medium">Cargando marketplace...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
@@ -98,15 +73,21 @@ export function Marketplace() {
               <h1 className="text-3xl font-bold text-slate-900 mb-2">Marketplace</h1>
               <p className="text-slate-600">Encuentra el producto ortopédico que necesitas</p>
             </div>
-              {user?.roles.includes('PROPIETARIO') && (
-                <Link to="/create-product">
+            {user?.roles.includes('PROPIETARIO') && (
+              <Link to="/create-product">
                 <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                    Publicar Producto
+                  <Plus className="w-4 h-4" />
+                  Publicar Producto
                 </Button>
-                </Link>
-              )}
+              </Link>
+            )}
           </div>
+
+          {error && (
+            <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 mb-6">
+              {error}
+            </div>
+          )}
 
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
@@ -134,12 +115,12 @@ export function Marketplace() {
                 <label className="block text-sm font-medium text-slate-700 mb-2">Categoría</label>
                 <select
                   value={filterCategory}
-                  onChange={(e) => setFilterCategory(e.target.value as ProductCategory | 'all')}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   <option value="all">Todas las categorías</option>
-                  {Object.entries(categoryLabels).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
+                  {tiposInsumo.map((t) => (
+                    <option key={t.id} value={t.nombre}>{t.nombre}</option>
                   ))}
                 </select>
               </div>
@@ -147,12 +128,12 @@ export function Marketplace() {
                 <label className="block text-sm font-medium text-slate-700 mb-2">Tipo de operación</label>
                 <select
                   value={filterOperation}
-                  onChange={(e) => setFilterOperation(e.target.value as OperationType | 'all')}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => setFilterOperation(e.target.value)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   <option value="all">Todas las operaciones</option>
-                  {Object.entries(operationTypeLabels).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
+                  {tiposOperacion.map((o) => (
+                    <option key={o.id} value={o.nombre}>{o.nombre}</option>
                   ))}
                 </select>
               </div>
@@ -167,45 +148,51 @@ export function Marketplace() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map((product) => (
-            <Link key={product.id} to={`/product/${product.id}`}>
-              <Card hover className="h-full flex flex-col">
-                <div className="aspect-square bg-slate-100 rounded-t-xl overflow-hidden">
-                  <img
-                    src={product.images[0]}
-                    alt={product.title}
-                    className="w-full h-full object-cover hover:scale-105 transition duration-300"
-                  />
-                </div>
-                <div className="p-4 flex-1 flex flex-col">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-semibold text-slate-900 line-clamp-2 flex-1">
-                      {product.title}
-                    </h3>
-                    <Badge variant={getOperationBadge(product.operationType)}>
-                      {operationTypeLabels[product.operationType]}
+          {filteredProducts.map((pub) => (
+            <Link key={pub.id} to={`/product/${pub.id}`}>
+              <Card hover className="overflow-hidden hover:shadow-lg transition flex flex-col h-full bg-white">
+                <div className="h-48 bg-slate-200 overflow-hidden relative">
+                  {pub.urlsImagenes && pub.urlsImagenes.length > 0 ? (
+                    <img 
+                      src={pub.urlsImagenes[0]} 
+                      alt={pub.titulo} 
+                      className="w-full h-full object-cover hover:scale-105 transition duration-300" 
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-100">
+                      Sin Imagen
+                    </div>
+                  )}
+                  <div className="absolute top-2 right-2">
+                    <Badge variant={
+                      pub.nombreTipoOperacion.toUpperCase().includes('DONACION') ? 'success' :
+                      pub.nombreTipoOperacion.toUpperCase().includes('ALQUILER') ? 'info' : 'warning'
+                    }>
+                      {pub.nombreTipoOperacion}
                     </Badge>
                   </div>
-
-                  <p className="text-sm text-slate-600 line-clamp-2 mb-3">
-                    {product.description}
-                  </p>
-
-                  <div className="flex items-center gap-1 text-sm text-slate-500 mb-3">
-                    <MapPin className="w-4 h-4" />
-                    {product.location}
-                  </div>
-
-                  <div className="mt-auto pt-3 border-t border-slate-100">
-                    {product.operationType === 'donation' ? (
-                      <div className="text-lg font-bold text-green-600">Gratis</div>
-                    ) : product.operationType === 'rental' ? (
-                      <div className="text-lg font-bold text-blue-600">${product.pricePerDay}/día</div>
-                    ) : (
-                      <div className="text-lg font-bold text-purple-600">${product.price?.toLocaleString()}</div>
-                    )}
-                  </div>
                 </div>
+                <CardContent className="p-4 flex-1 flex flex-col bg-white">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-1 line-clamp-2">{pub.titulo}</h3>
+                  <p className="text-slate-600 text-sm mb-4 line-clamp-2">{pub.descripcion}</p>
+                  
+                  <div className="space-y-2 mt-auto pt-3 border-t border-slate-100">
+                    <div className="flex items-center text-sm text-slate-500 gap-2">
+                      <MapPin className="w-4 h-4" />
+                      <span className="truncate">{pub.direccion}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <Badge variant="info">{pub.nombreTipoInsumo}</Badge>
+                      <span className="font-semibold text-blue-600">
+                        {pub.nombreTipoOperacion.toUpperCase().includes('DONACION') ? (
+                          <span className="text-green-600 font-bold">Gratis</span>
+                        ) : (
+                          <span>${pub.monto} {pub.unidadTiempo && `/ ${pub.unidadTiempo}`}</span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
               </Card>
             </Link>
           ))}

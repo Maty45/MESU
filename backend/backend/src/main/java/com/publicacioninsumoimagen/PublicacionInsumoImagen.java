@@ -22,7 +22,7 @@ public class PublicacionInsumoImagen {
     @Column(name = "nro_publicacion_insumo_imagen", nullable = false)
     private Integer nroPublicacionInsumoImagen;
 
-    @Column(name = "urlpath_publicacion_insumo_imagen", nullable = false, length = 512, unique = true)
+    @Column(name = "urlpath_publicacion_insumo_imagen", nullable = false, length = 512)
     private String urlpathPublicacionInsumoImagen;
 
     @ManyToOne(fetch = FetchType.LAZY)

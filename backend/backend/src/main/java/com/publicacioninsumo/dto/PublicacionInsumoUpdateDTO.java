@@ -10,16 +10,16 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 public class PublicacionInsumoUpdateDTO {
-    //Campos básicos editables
+    // Campos básicos editables
     private String titulo;
     private String descripcion;
 
-    //Condiciones editables
+    // Condiciones editables
     private Integer monto;
     private String unidadTiempo;
     private Long idTipoOperacion;
 
-    //Estado del insumo
+    // Estado del insumo
     private Long idEstadoInsumo;
 
     // Nueva lista completa de URLs de Cloudinary si el usuario añade o quita fotos

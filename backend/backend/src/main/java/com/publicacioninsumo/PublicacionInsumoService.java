@@ -56,8 +56,13 @@ public class PublicacionInsumoService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-
-
+    //Obtener una publicación por ID
+    @Transactional(readOnly = true)
+    public PublicacionInsumoResponseDTO obtenerPorId(Long id) {
+        PublicacionInsumo publicacion = publicacionInsumoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id));
+        return convertToDTO(publicacion);
+    }
     //Guardar una publicación
     @CacheEvict(value = "catalogoActivo", allEntries = true)
     @Transactional
@@ -138,11 +143,13 @@ public class PublicacionInsumoService {
         // 5. ASOCIACIÓN DE IMÁGENES (CLOUDINARY)
         // ==========================================
         if (createDTO.getUrlsImagenes() != null && !createDTO.getUrlsImagenes().isEmpty()) {
+            java.util.concurrent.atomic.AtomicInteger index = new java.util.concurrent.atomic.AtomicInteger(1);
             List<PublicacionInsumoImagen> imagenesJPA = createDTO.getUrlsImagenes().stream()
                     .filter(url -> url != null && !url.trim().isEmpty()) // Limpiamos strings vacíos accidentales
                     .map(url -> {
                         PublicacionInsumoImagen img = new PublicacionInsumoImagen();
                         img.setUrlpathPublicacionInsumoImagen(url.trim());
+                        img.setNroPublicacionInsumoImagen(index.getAndIncrement());
                         img.setPublicacionInsumo(publicacion); // Crucial para que JPA maneje la FK en cascada
                         return img;
                     }).collect(Collectors.toList());
@@ -231,12 +238,15 @@ public class PublicacionInsumoService {
         // Modificación de Imágenes (Pisamos las viejas con las nuevas de Cloudinary)
         if (updateDTO.getUrlsImagenes() != null) {
             publicacion.getPublicacionInsumoImagenes().clear(); // Borramos los registros viejos
+            publicacionInsumoRepository.saveAndFlush(publicacion); // Forzamos a Hibernate a ejecutar el DELETE primero para evitar violaciones de constraint únicos de URL
 
+            java.util.concurrent.atomic.AtomicInteger index = new java.util.concurrent.atomic.AtomicInteger(1);
             List<PublicacionInsumoImagen> nuevasImagenes = updateDTO.getUrlsImagenes().stream()
                     .filter(url -> url != null && !url.trim().isEmpty())
                     .map(url -> {
                         PublicacionInsumoImagen img = new PublicacionInsumoImagen();
                         img.setUrlpathPublicacionInsumoImagen(url.trim());
+                        img.setNroPublicacionInsumoImagen(index.getAndIncrement());
                         img.setPublicacionInsumo(publicacion); // FK en cascada
                         return img;
                     }).collect(Collectors.toList());
