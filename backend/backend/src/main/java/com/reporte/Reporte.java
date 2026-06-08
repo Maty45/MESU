@@ -38,10 +38,10 @@ public class Reporte {
     private Usuario usuarioReportante;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario_reportado", nullable = false)
+    @JoinColumn(name = "id_usuario_reportado")
     private Usuario usuarioReportado;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_publicacion_insumo_reportada", nullable = false)
+    @JoinColumn(name = "id_publicacion_insumo_reportada")
     private PublicacionInsumo publicacionInsumoReportada;
 }
