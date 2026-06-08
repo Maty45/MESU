@@ -19,7 +19,7 @@ public interface PublicacionInsumoRepository extends JpaRepository<PublicacionIn
             "JOIN FETCH p.estadoPublicacionInsumo " +
             "JOIN FETCH p.usuarioPropietario " +
             "LEFT JOIN FETCH p.publicacionInsumoImagenes " +
-            "WHERE p.estadoPublicacionInsumo.nombreEPI = :nombreEstado")
+            "WHERE p.estadoPublicacionInsumo.nombreEPI = :nombreEstado AND p.estadoPublicacionInsumo.nombreEPI != 'ELIMINADA'")
     List<PublicacionInsumo> findByEstadoPublicacionCatalogo(@Param("nombreEstado") String nombreEstado);
 
     // Buscar una publicación en particular para la vista en detalle de la misma

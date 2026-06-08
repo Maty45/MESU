@@ -1,5 +1,6 @@
 package com.publicacioninsumo;
 
+import com.exception.ResourceNotFoundException;
 import com.publicacioninsumo.dto.PublicacionInsumoCreateDTO;
 import com.publicacioninsumo.dto.PublicacionInsumoResponseDTO;
 import com.publicacioninsumo.dto.PublicacionInsumoUpdateDTO;
@@ -9,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.AccessDeniedException;
+import java.nio.file.AccessDeniedException; // Corrected import
 import java.util.List;
 
 @RestController
@@ -31,13 +32,24 @@ public class PublicacionInsumoController {
         return ResponseEntity.ok(catalogo); // Retorna 200 OK
     }
 
+    // este te trae TODAS las publicaciones, para las metricas del admin
+    @GetMapping("/obtenerPublicaciones")
+    public ResponseEntity<List<PublicacionInsumoResponseDTO>> obtenerPublicaciones() {
+        List<PublicacionInsumoResponseDTO> publicaciones = publicacionService.obtenerPublicaciones();
+        return ResponseEntity.ok(publicaciones); // Retorna 200 OK
+    }
+
     // ==========================================
     // GET: Obtener una publicación por ID
     // ==========================================
     @GetMapping("/{id}")
     public ResponseEntity<PublicacionInsumoResponseDTO> obtenerPorId(@PathVariable("id") Long id) {
-        PublicacionInsumoResponseDTO publicacion = publicacionService.obtenerPorId(id);
-        return ResponseEntity.ok(publicacion);
+        try {
+            PublicacionInsumoResponseDTO publicacion = publicacionService.obtenerPorId(id);
+            return ResponseEntity.ok(publicacion);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build(); // Retorna 404 Not Found
+        }
     }
 
     // ==========================================
@@ -63,24 +75,44 @@ public class PublicacionInsumoController {
     public ResponseEntity<PublicacionInsumoResponseDTO> modificarPublicacion(
             @PathVariable("id") Long id,
             @Valid @RequestBody PublicacionInsumoUpdateDTO updateDTO,
-            Authentication authentication) throws AccessDeniedException {
+            Authentication authentication) {
 
         String emailUsuarioLogueado = authentication.getName();
 
-        PublicacionInsumoResponseDTO modificada = publicacionService.modificarPublicacion(id, updateDTO, emailUsuarioLogueado);
-
-        return ResponseEntity.ok(modificada); // Retorna 200 OK
+        try {
+            PublicacionInsumoResponseDTO modificada = publicacionService.modificarPublicacion(id, updateDTO, emailUsuarioLogueado);
+            return ResponseEntity.ok(modificada); // Retorna 200 OK
+        } catch (AccessDeniedException e) { // Catching java.nio.file.AccessDeniedException
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // Retorna 403 Forbidden
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build(); // Retorna 404 Not Found
+        }
     }
 
     // ==========================================
     // DELETE: Baja lógica de la publicación
     // ==========================================
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarPublicacion(@PathVariable("id") Long id, Authentication authentication) throws AccessDeniedException {
+    public ResponseEntity<Void> eliminarPublicacion(@PathVariable("id") Long id, Authentication authentication) {
         String emailUsuarioLogueado = authentication.getName();
 
-        publicacionService.eliminarPublicacion(id, emailUsuarioLogueado);
+        try {
+            publicacionService.eliminarPublicacion(id, emailUsuarioLogueado);
+            return ResponseEntity.noContent().build(); // Retorna 204 No Content (Éxito, pero sin cuerpo en la respuesta)
+        } catch (AccessDeniedException e) { // Catching java.nio.file.AccessDeniedException
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // Retorna 403 Forbidden
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build(); // Retorna 404 Not Found
+        }
+    }
 
-        return ResponseEntity.noContent().build(); // Retorna 204 No Content (Éxito, pero sin cuerpo en la respuesta)
+    @DeleteMapping("/delete")
+    public ResponseEntity<String> eliminarPublicacionAdmin(@RequestParam("id") Long id) {
+        try {
+            publicacionService.deleteAdmin(id);
+            return ResponseEntity.ok("Publicacion eliminada"); // Retorna 204 No Content (Éxito, pero sin cuerpo en la respuesta)
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build(); // Retorna 404 Not Found
+        }
     }
 }

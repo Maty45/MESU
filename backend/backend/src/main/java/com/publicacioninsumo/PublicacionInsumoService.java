@@ -22,6 +22,7 @@ import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -56,13 +57,23 @@ public class PublicacionInsumoService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    //Obtener una publicación por ID
+
     @Transactional(readOnly = true)
     public PublicacionInsumoResponseDTO obtenerPorId(Long id) {
         PublicacionInsumo publicacion = publicacionInsumoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id));
         return convertToDTO(publicacion);
     }
+
+    @Transactional(readOnly = true)
+    public List<PublicacionInsumoResponseDTO> obtenerPublicaciones() {
+        List<PublicacionInsumo> publicaciones = publicacionInsumoRepository.findAll();
+        return publicaciones.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+
     //Guardar una publicación
     @CacheEvict(value = "catalogoActivo", allEntries = true)
     @Transactional
@@ -143,14 +154,14 @@ public class PublicacionInsumoService {
         // 5. ASOCIACIÓN DE IMÁGENES (CLOUDINARY)
         // ==========================================
         if (createDTO.getUrlsImagenes() != null && !createDTO.getUrlsImagenes().isEmpty()) {
-            java.util.concurrent.atomic.AtomicInteger index = new java.util.concurrent.atomic.AtomicInteger(1);
+            AtomicInteger counter = new AtomicInteger(1); // Inicia el contador en 1
             List<PublicacionInsumoImagen> imagenesJPA = createDTO.getUrlsImagenes().stream()
                     .filter(url -> url != null && !url.trim().isEmpty()) // Limpiamos strings vacíos accidentales
                     .map(url -> {
                         PublicacionInsumoImagen img = new PublicacionInsumoImagen();
                         img.setUrlpathPublicacionInsumoImagen(url.trim());
-                        img.setNroPublicacionInsumoImagen(index.getAndIncrement());
                         img.setPublicacionInsumo(publicacion); // Crucial para que JPA maneje la FK en cascada
+                        img.setNroPublicacionInsumoImagen(counter.getAndIncrement()); // Asigna un número secuencial
                         return img;
                     }).collect(Collectors.toList());
 
@@ -238,16 +249,14 @@ public class PublicacionInsumoService {
         // Modificación de Imágenes (Pisamos las viejas con las nuevas de Cloudinary)
         if (updateDTO.getUrlsImagenes() != null) {
             publicacion.getPublicacionInsumoImagenes().clear(); // Borramos los registros viejos
-            publicacionInsumoRepository.saveAndFlush(publicacion); // Forzamos a Hibernate a ejecutar el DELETE primero para evitar violaciones de constraint únicos de URL
-
-            java.util.concurrent.atomic.AtomicInteger index = new java.util.concurrent.atomic.AtomicInteger(1);
+            AtomicInteger counter = new AtomicInteger(1); // Inicia el contador en 1
             List<PublicacionInsumoImagen> nuevasImagenes = updateDTO.getUrlsImagenes().stream()
                     .filter(url -> url != null && !url.trim().isEmpty())
                     .map(url -> {
                         PublicacionInsumoImagen img = new PublicacionInsumoImagen();
                         img.setUrlpathPublicacionInsumoImagen(url.trim());
-                        img.setNroPublicacionInsumoImagen(index.getAndIncrement());
                         img.setPublicacionInsumo(publicacion); // FK en cascada
+                        img.setNroPublicacionInsumoImagen(counter.getAndIncrement()); // Asigna un número secuencial
                         return img;
                     }).collect(Collectors.toList());
             publicacion.getPublicacionInsumoImagenes().addAll(nuevasImagenes);
@@ -268,8 +277,13 @@ public class PublicacionInsumoService {
         PublicacionInsumo publicacion = publicacionInsumoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id));
 
-        if (!publicacion.getUsuarioPropietario().getEmailUsuario().equals(emailUsuarioLogueado)) {
-            throw new AccessDeniedException("No tienes permiso para modificar esta publicación");
+        // Permitir eliminación si es el dueño O si es administrador
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean esAdmin = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ADMIN"));
+
+        if (!esAdmin && !publicacion.getUsuarioPropietario().getEmailUsuario().equals(emailUsuarioLogueado)) {
+            throw new AccessDeniedException("No tienes permiso para eliminar esta publicación");
         }
         // Buscamos el estado de "baja" o "inactiva"
         var estadoBaja = estadoPublicacionRepository.findByNombreEPI("ELIMINADA")
@@ -278,6 +292,20 @@ public class PublicacionInsumoService {
         publicacion.setEstadoPublicacionInsumo(estadoBaja);
         publicacion.setFechaUltimaActualizacionPI(LocalDateTime.now());
         publicacionInsumoRepository.save(publicacion);
+    }
+
+    @Transactional
+    public String deleteAdmin(Long id) {
+        PublicacionInsumo publicacion = publicacionInsumoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id));
+
+        var estadoBaja = estadoPublicacionRepository.findByNombreEPI("ELIMINADA")
+                .orElseThrow(() -> new IllegalStateException("Estado 'ELIMINADA' no encontrado."));
+
+        publicacion.setEstadoPublicacionInsumo(estadoBaja);
+        publicacion.setFechaUltimaActualizacionPI(LocalDateTime.now());
+        publicacionInsumoRepository.save(publicacion);
+        return "Publicación marcada como ELIMINADA exitosamente";
     }
 
     //Valida que, según el tipo de operación, la instancia de CondicionOperacion se cree correctamente
