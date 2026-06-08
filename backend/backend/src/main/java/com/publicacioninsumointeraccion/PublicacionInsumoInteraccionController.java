@@ -1,10 +1,45 @@
 package com.publicacioninsumointeraccion;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.publicacioninsumointeraccion.dto.ConcretarInteraccionRequestDTO;
+import com.publicacioninsumointeraccion.dto.PublicacionInsumoInteraccionResponseDTO;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.nio.file.AccessDeniedException;
+import java.util.List;
 
 @RestController
-@RequestMapping("api/interacciones")
+@RequestMapping("/api/interacciones")
 public class PublicacionInsumoInteraccionController {
-    
+
+    private final PublicacionInsumoInterraccionService interaccionService;
+
+    public PublicacionInsumoInteraccionController(PublicacionInsumoInterraccionService interaccionService) {
+        this.interaccionService = interaccionService;
+    }
+
+    // GET: Obtener todas las interacciones de una publicación (solo para el propietario)
+    @GetMapping("/publicacion/{idPublicacion}")
+    public ResponseEntity<List<PublicacionInsumoInteraccionResponseDTO>> obtenerInteracciones(
+            @PathVariable("idPublicacion") Long idPublicacion,
+            Authentication authentication) throws AccessDeniedException {
+        
+        String emailUsuarioLogueado = authentication.getName();
+        List<PublicacionInsumoInteraccionResponseDTO> interacciones = interaccionService.obtenerInteraccionesDePublicacion(idPublicacion, emailUsuarioLogueado);
+        return ResponseEntity.ok(interacciones);
+    }
+
+    // POST: Concretar una interacción de tipo CONTACTO a VENTA, DONACIÓN o ALQUILER
+    @PostMapping("/{idInteraccion}/concretar")
+    public ResponseEntity<PublicacionInsumoInteraccionResponseDTO> concretarContacto(
+            @PathVariable("idInteraccion") Long idInteraccion,
+            @Valid @RequestBody ConcretarInteraccionRequestDTO requestDTO,
+            Authentication authentication) throws AccessDeniedException {
+        
+        String emailUsuarioLogueado = authentication.getName();
+        PublicacionInsumoInteraccionResponseDTO response = interaccionService.concretarContacto(idInteraccion, requestDTO, emailUsuarioLogueado);
+        return ResponseEntity.ok(response);
+    }
 }

@@ -3,6 +3,7 @@ package com.publicacioninsumo;
 import com.publicacioninsumo.dto.PublicacionInsumoCreateDTO;
 import com.publicacioninsumo.dto.PublicacionInsumoResponseDTO;
 import com.publicacioninsumo.dto.PublicacionInsumoUpdateDTO;
+import com.publicacioninsumo.dto.RegistrarDevolucionRequestDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -92,5 +93,19 @@ public class PublicacionInsumoController {
         publicacionService.eliminarPublicacion(id, emailUsuarioLogueado);
 
         return ResponseEntity.noContent().build(); // Retorna 204 No Content (Éxito, pero sin cuerpo en la respuesta)
+    }
+
+    // ==========================================
+    // POST: Registrar devolución del insumo alquilado
+    // ==========================================
+    @PostMapping("/{id}/registrar-devolucion")
+    public ResponseEntity<PublicacionInsumoResponseDTO> registrarDevolucion(
+            @PathVariable("id") Long id,
+            @RequestBody RegistrarDevolucionRequestDTO requestDTO,
+            Authentication authentication) throws AccessDeniedException {
+
+        String emailUsuarioLogueado = authentication.getName();
+        PublicacionInsumoResponseDTO response = publicacionService.registrarDevolucion(id, requestDTO, emailUsuarioLogueado);
+        return ResponseEntity.ok(response);
     }
 }
