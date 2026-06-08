@@ -54,6 +54,7 @@ export function Layout() {
                     <LayoutDashboard className="w-4 h-4" />
                     Panel
                   </Link>
+
                   {(user?.roles.includes('CLIENTE') ||
                       user?.roles.includes('PROPIETARIO')) && (
                     <Link
@@ -119,6 +120,7 @@ export function Layout() {
                   >
                     Panel
                   </Link>
+
                   {(user?.roles.includes('CLIENTE')
                       || user?.roles.includes('PROPIETARIO')) && (
                     <Link

@@ -1,6 +1,8 @@
 package com.usuario;
 
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,7 +26,7 @@ public class Usuario {
     private Long idUsuario;
 
     @Column(name = "dni_usuario", nullable = false, unique = true)
-    private String dniUsuario;
+    private Long dniUsuario;
 
     @Column(name = "nombre_usuario", nullable = false)
     private String nombreUsuario;
@@ -39,7 +41,7 @@ public class Usuario {
     private String contraseniaUsuario;
 
     @Column(name = "telefono_usuario", nullable = false)
-    private String telefonoUsuario;
+    private Long telefonoUsuario;
 
     @Column(name = "fecha_hora_registro_usuario", nullable = false)
     private LocalDateTime fechaHRegistroUsuario;
@@ -50,5 +52,6 @@ public class Usuario {
     @OneToMany(mappedBy = "usuario",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
+    @JsonManagedReference
     private List<UsuarioRol> usuarioRoles;
 }

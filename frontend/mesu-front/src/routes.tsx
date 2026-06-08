@@ -7,10 +7,10 @@ import { Marketplace } from "./pages/Marketplace";
 import { AccountSettings } from "./pages/AccountSettings";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { ClientDashboard } from "./pages/ClientDashboard";
-import { CreateProduct } from "./pages/CreateProduct";
 import { NotFound } from "./pages/NotFound";
 import { OwnerDashboard } from "./pages/OwnerDashboard";
 import { ProductDetail } from "./pages/ProductDetail";
+import { PublicacionInsumoForm } from "./pages/PublicacionInsumoForm";
 
 export const router = createBrowserRouter([
   {
@@ -19,15 +19,16 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Landing },
       { path: "login", Component: Login },
-      {path: "register", Component: Register },
-      {path: "marketplace", Component: Marketplace },
-      {path: "accountsettings", Component: AccountSettings},
-      {path: "createproduct", Component: CreateProduct},
+      { path: "register", Component: Register },
+      { path: "marketplace", Component: Marketplace },
+      { path: "accountsettings", Component: AccountSettings },
+      { path: "create-product", Component: PublicacionInsumoForm },
       { path: "admin-dashboard", Component: AdminDashboard },
       { path: "client-dashboard", Component: ClientDashboard },
       { path: "owner-dashboard", Component: OwnerDashboard },
-      {path: "product-detail", Component: ProductDetail},
-      {path: "*", Component: NotFound}
+      { path: "product/:id", Component: ProductDetail },
+      { path: "publicacion-insumo/editar/:id", Component: PublicacionInsumoForm },
+      { path: "*", Component: NotFound }
     ],
   },
 ]);

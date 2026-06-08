@@ -1,8 +1,36 @@
 package com.publicacioninsumo;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PublicacionInsumoRepository extends JpaRepository<PublicacionInsumo, Long> {
+
+    // Buscar publicaciones ACTIVAS para el catálogo, optimizando la carga de imágenes y relaciones
+    @Query("SELECT DISTINCT p FROM PublicacionInsumo p " +
+            "JOIN FETCH p.condicionOperacion " +
+            "JOIN FETCH p.estadoInsumo " +
+            "JOIN FETCH p.tipoInsumo " +
+            "JOIN FETCH p.estadoPublicacionInsumo " +
+            "JOIN FETCH p.usuarioPropietario " +
+            "LEFT JOIN FETCH p.publicacionInsumoImagenes " +
+            "WHERE p.estadoPublicacionInsumo.nombreEPI = :nombreEstado")
+    List<PublicacionInsumo> findByEstadoPublicacionCatalogo(@Param("nombreEstado") String nombreEstado);
+
+    // Buscar una publicación en particular para la vista en detalle de la misma
+    @Query("SELECT p FROM PublicacionInsumo p " +
+            "JOIN FETCH p.condicionOperacion " +
+            "JOIN FETCH p.estadoInsumo " +
+            "JOIN FETCH p.tipoInsumo " +
+            "JOIN FETCH p.usuarioPropietario " +
+            "JOIN FETCH p.publicacionInsumoUbicacion " +
+            "LEFT JOIN FETCH p.publicacionInsumoImagenes " +
+            "WHERE p.idPI = :id")
+    Optional<PublicacionInsumo> findByDetalleId(@Param("id") long id);
+
 }

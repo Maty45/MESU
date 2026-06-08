@@ -10,8 +10,12 @@ description = 'backend'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(26)
     }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
 }
 
 repositories {
@@ -26,6 +30,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'io.jsonwebtoken:jjwt-api:0.12.7'
+    implementation 'com.cloudinary:cloudinary-http5:2.0.0'
 
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
@@ -46,4 +51,9 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+tasks.register('runCloudinaryTest', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.cloudinary.CloudinaryTest'
 }

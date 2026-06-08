@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -37,8 +38,8 @@ public class PublicacionInsumo {
     @Column(name = "descripcion_pi", nullable = false)
     private String descripcionPI;
 
-    @Column(name = "fecha_hora_creacion_pi", nullable = false)
-    private LocalDateTime fechaCreacionPI;
+    @Column(name = "fecha_hora_creacion_pi", nullable = true)
+    private LocalDate fechaCreacionPI = LocalDate.now();
 
     @Column(name = "fecha_hora_ultima_actualizacion_pi")
     private LocalDateTime fechaUltimaActualizacionPI;
