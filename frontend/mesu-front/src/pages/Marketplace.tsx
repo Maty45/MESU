@@ -51,7 +51,7 @@ export function Marketplace() {
                           product.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === 'all' || product.nombreTipoInsumo === filterCategory;
     const matchesOperation = filterOperation === 'all' || product.nombreTipoOperacion === filterOperation;
-    const isActive = product.nombreEstadoPublicacion.toUpperCase() === 'ACTIVA';
+    const isActive = product.nombreEstadoPublicacion && product.nombreEstadoPublicacion.toUpperCase() === 'ACTIVA';
 
     return matchesSearch && matchesCategory && matchesOperation && isActive;
   });

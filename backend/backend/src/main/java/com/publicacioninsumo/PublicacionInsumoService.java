@@ -4,15 +4,24 @@ import com.condicionoperacion.CondicionOperacion;
 import com.condicionoperacion.UnidadTiempo;
 import com.estadoinsumo.EstadoInsumoRepository;
 import com.estadopublicacioninsumo.EstadoPublicacionInsumoRepository;
+import com.estadopublicacioninsumo.EstadoPublicacionInsumo;
 import com.exception.ResourceNotFoundException;
 import com.publicacioninsumo.dto.PublicacionInsumoCreateDTO;
 import com.publicacioninsumo.dto.PublicacionInsumoResponseDTO;
 import com.publicacioninsumo.dto.PublicacionInsumoUpdateDTO;
+import com.publicacioninsumo.dto.RegistrarDevolucionRequestDTO;
 import com.publicacioninsumoimagen.PublicacionInsumoImagen;
 import com.tipoinsumo.TipoInsumoRepository;
 import com.tipooperacion.TipoOperacionRepository;
 import com.ubicacion.PublicacionInsumoUbicacion;
 import com.usuario.UsuarioRepository;
+import com.usuario.Usuario;
+import com.alquilerinsumo.AlquilerInsumo;
+import com.alquilerinsumo.AlquilerInsumoRepository;
+import com.tipointeraccion.TipoInteraccion;
+import com.tipointeraccion.TipoInteraccionRepository;
+import com.publicacioninsumointeraccion.PublicacionInsumoInteraccion;
+import com.publicacioninsumointeraccion.PublicacionInsumoInteraccionRepository;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -22,6 +31,7 @@ import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,19 +42,28 @@ public class PublicacionInsumoService {
     private final TipoOperacionRepository tipoOperacionRepository;
     private final EstadoPublicacionInsumoRepository estadoPublicacionRepository;
     private final UsuarioRepository usuarioRepository;
+    private final AlquilerInsumoRepository alquilerInsumoRepository;
+    private final TipoInteraccionRepository tipoInteraccionRepository;
+    private final PublicacionInsumoInteraccionRepository interaccionRepository;
 
     public PublicacionInsumoService(PublicacionInsumoRepository publicacionInsumoRepository,
                                     TipoInsumoRepository tipoInsumoRepository,
                                     EstadoInsumoRepository estadoInsumoRepository,
                                     TipoOperacionRepository tipoOperacionRepository,
                                     EstadoPublicacionInsumoRepository estadoPublicacionRepository,
-                                    UsuarioRepository usuarioRepository) {
+                                    UsuarioRepository usuarioRepository,
+                                    AlquilerInsumoRepository alquilerInsumoRepository,
+                                    TipoInteraccionRepository tipoInteraccionRepository,
+                                    PublicacionInsumoInteraccionRepository interaccionRepository) {
         this.publicacionInsumoRepository = publicacionInsumoRepository;
         this.tipoInsumoRepository = tipoInsumoRepository;
         this.estadoInsumoRepository = estadoInsumoRepository;
         this.tipoOperacionRepository = tipoOperacionRepository;
         this.estadoPublicacionRepository = estadoPublicacionRepository;
         this.usuarioRepository = usuarioRepository;
+        this.alquilerInsumoRepository = alquilerInsumoRepository;
+        this.tipoInteraccionRepository = tipoInteraccionRepository;
+        this.interaccionRepository = interaccionRepository;
     }
 
     //Obtener todas las publicaciones activas
@@ -56,13 +75,23 @@ public class PublicacionInsumoService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    //Obtener una publicación por ID
+
     @Transactional(readOnly = true)
     public PublicacionInsumoResponseDTO obtenerPorId(Long id) {
         PublicacionInsumo publicacion = publicacionInsumoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id));
         return convertToDTO(publicacion);
     }
+
+    @Transactional(readOnly = true)
+    public List<PublicacionInsumoResponseDTO> obtenerPublicaciones() {
+        List<PublicacionInsumo> publicaciones = publicacionInsumoRepository.findAll();
+        return publicaciones.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+
     //Guardar una publicación
     @CacheEvict(value = "catalogoActivo", allEntries = true)
     @Transactional
@@ -143,14 +172,14 @@ public class PublicacionInsumoService {
         // 5. ASOCIACIÓN DE IMÁGENES (CLOUDINARY)
         // ==========================================
         if (createDTO.getUrlsImagenes() != null && !createDTO.getUrlsImagenes().isEmpty()) {
-            java.util.concurrent.atomic.AtomicInteger index = new java.util.concurrent.atomic.AtomicInteger(1);
+            AtomicInteger counter = new AtomicInteger(1); // Inicia el contador en 1
             List<PublicacionInsumoImagen> imagenesJPA = createDTO.getUrlsImagenes().stream()
                     .filter(url -> url != null && !url.trim().isEmpty()) // Limpiamos strings vacíos accidentales
                     .map(url -> {
                         PublicacionInsumoImagen img = new PublicacionInsumoImagen();
                         img.setUrlpathPublicacionInsumoImagen(url.trim());
-                        img.setNroPublicacionInsumoImagen(index.getAndIncrement());
                         img.setPublicacionInsumo(publicacion); // Crucial para que JPA maneje la FK en cascada
+                        img.setNroPublicacionInsumoImagen(counter.getAndIncrement()); // Asigna un número secuencial
                         return img;
                     }).collect(Collectors.toList());
 
@@ -238,16 +267,14 @@ public class PublicacionInsumoService {
         // Modificación de Imágenes (Pisamos las viejas con las nuevas de Cloudinary)
         if (updateDTO.getUrlsImagenes() != null) {
             publicacion.getPublicacionInsumoImagenes().clear(); // Borramos los registros viejos
-            publicacionInsumoRepository.saveAndFlush(publicacion); // Forzamos a Hibernate a ejecutar el DELETE primero para evitar violaciones de constraint únicos de URL
-
-            java.util.concurrent.atomic.AtomicInteger index = new java.util.concurrent.atomic.AtomicInteger(1);
+            AtomicInteger counter = new AtomicInteger(1); // Inicia el contador en 1
             List<PublicacionInsumoImagen> nuevasImagenes = updateDTO.getUrlsImagenes().stream()
                     .filter(url -> url != null && !url.trim().isEmpty())
                     .map(url -> {
                         PublicacionInsumoImagen img = new PublicacionInsumoImagen();
                         img.setUrlpathPublicacionInsumoImagen(url.trim());
-                        img.setNroPublicacionInsumoImagen(index.getAndIncrement());
                         img.setPublicacionInsumo(publicacion); // FK en cascada
+                        img.setNroPublicacionInsumoImagen(counter.getAndIncrement()); // Asigna un número secuencial
                         return img;
                     }).collect(Collectors.toList());
             publicacion.getPublicacionInsumoImagenes().addAll(nuevasImagenes);
@@ -268,8 +295,13 @@ public class PublicacionInsumoService {
         PublicacionInsumo publicacion = publicacionInsumoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id));
 
-        if (!publicacion.getUsuarioPropietario().getEmailUsuario().equals(emailUsuarioLogueado)) {
-            throw new AccessDeniedException("No tienes permiso para modificar esta publicación");
+        // Permitir eliminación si es el dueño O si es administrador
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean esAdmin = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ADMIN"));
+
+        if (!esAdmin && !publicacion.getUsuarioPropietario().getEmailUsuario().equals(emailUsuarioLogueado)) {
+            throw new AccessDeniedException("No tienes permiso para eliminar esta publicación");
         }
         // Buscamos el estado de "baja" o "inactiva"
         var estadoBaja = estadoPublicacionRepository.findByNombreEPI("ELIMINADA")
@@ -278,6 +310,89 @@ public class PublicacionInsumoService {
         publicacion.setEstadoPublicacionInsumo(estadoBaja);
         publicacion.setFechaUltimaActualizacionPI(LocalDateTime.now());
         publicacionInsumoRepository.save(publicacion);
+    }
+
+    // Obtener todas las publicaciones de un propietario
+    @Transactional(readOnly = true)
+    public List<PublicacionInsumoResponseDTO> obtenerPublicacionesPropietario(String email) {
+        List<PublicacionInsumo> publicaciones = publicacionInsumoRepository.findByUsuarioPropietarioEmailUsuario(email);
+        return publicaciones.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Registrar devolución de un insumo alquilado
+    @CacheEvict(value = "catalogoActivo", allEntries = true)
+    @Transactional
+    public PublicacionInsumoResponseDTO registrarDevolucion(Long id, RegistrarDevolucionRequestDTO requestDTO, String emailUsuarioLogueado) throws AccessDeniedException {
+        PublicacionInsumo publicacion = publicacionInsumoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id));
+
+        if (!publicacion.getUsuarioPropietario().getEmailUsuario().equals(emailUsuarioLogueado)) {
+            throw new AccessDeniedException("No tienes permiso para modificar esta publicación");
+        }
+
+        // Validar que el estado actual sea ALQUILADA
+        if (!publicacion.getEstadoPublicacionInsumo().getNombreEPI().equalsIgnoreCase("ALQUILADA")) {
+            throw new IllegalArgumentException("Regla de Negocio: Solo se puede registrar la devolución de una publicación que esté ALQUILADA.");
+        }
+
+        // Buscar el alquiler activo
+        AlquilerInsumo alquiler = alquilerInsumoRepository.findActiveRentalByPublicacionId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró ningún alquiler activo para la publicación con ID: " + id));
+
+        // Registrar la fecha de devolución real
+        LocalDate fechaDevolucion = requestDTO.getFechaDevolucion() != null ? requestDTO.getFechaDevolucion() : LocalDate.now();
+        if (fechaDevolucion.isBefore(alquiler.getFechaDesdeAI())) {
+            throw new IllegalArgumentException("Regla de Negocio: La fecha de devolución no puede ser anterior a la fecha de inicio del alquiler.");
+        }
+        alquiler.setFechaHastaRealAI(fechaDevolucion);
+        alquilerInsumoRepository.save(alquiler);
+
+        // Cambiar estado a ACTIVA
+        EstadoPublicacionInsumo estadoActiva = estadoPublicacionRepository.findByNombreEPI("ACTIVA")
+                .orElseThrow(() -> new IllegalStateException("Estado 'ACTIVA' no inicializado en el sistema."));
+        publicacion.setEstadoPublicacionInsumo(estadoActiva);
+        publicacion.setFechaUltimaActualizacionPI(LocalDateTime.now());
+
+        // Buscar el tipo de interacción DEVOLUCION
+        TipoInteraccion tipoDevolucion = tipoInteraccionRepository.findByNombreTipoInteraccion("DEVOLUCION")
+                .orElseThrow(() -> new ResourceNotFoundException("Tipo de interacción 'DEVOLUCION' no encontrado en el sistema."));
+
+        // Registrar la interacción de tipo DEVOLUCION para mantener el historial
+        PublicacionInsumoInteraccion interaccionDevolucion = new PublicacionInsumoInteraccion();
+        interaccionDevolucion.setFechaHPII(LocalDateTime.now());
+        interaccionDevolucion.setPublicacionInsumo(publicacion);
+        interaccionDevolucion.setTipoInteraccion(tipoDevolucion);
+
+        // El cliente de la devolución es el mismo que alquiló
+        List<PublicacionInsumoInteraccion> interaccionesAlquiler = interaccionRepository.findByPublicacionInsumoId(id);
+        Usuario cliente = interaccionesAlquiler.stream()
+                .filter(pii -> pii.getAlquilerInsumo() != null && pii.getAlquilerInsumo().getIdAlquiler().equals(alquiler.getIdAlquiler()))
+                .map(PublicacionInsumoInteraccion::getUsuarioCliente)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Error de consistencia: No se encontró la interacción de alquiler asociada."));
+
+        interaccionDevolucion.setUsuarioCliente(cliente);
+        interaccionDevolucion.setAlquilerInsumo(alquiler);
+        interaccionRepository.save(interaccionDevolucion);
+
+        PublicacionInsumo guardada = publicacionInsumoRepository.save(publicacion);
+        return convertToDTO(guardada);
+    }
+
+    @Transactional
+    public String deleteAdmin(Long id) {
+        PublicacionInsumo publicacion = publicacionInsumoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró la publicación con ID: " + id));
+
+        var estadoBaja = estadoPublicacionRepository.findByNombreEPI("ELIMINADA")
+                .orElseThrow(() -> new IllegalStateException("Estado 'ELIMINADA' no encontrado."));
+
+        publicacion.setEstadoPublicacionInsumo(estadoBaja);
+        publicacion.setFechaUltimaActualizacionPI(LocalDateTime.now());
+        publicacionInsumoRepository.save(publicacion);
+        return "Publicación marcada como ELIMINADA exitosamente";
     }
 
     //Valida que, según el tipo de operación, la instancia de CondicionOperacion se cree correctamente
@@ -365,6 +480,13 @@ public class PublicacionInsumoService {
             dto.setUrlsImagenes(publicacion.getPublicacionInsumoImagenes().stream()
                     .map(img -> img.getUrlpathPublicacionInsumoImagen())
                     .collect(Collectors.toList()));
+        }
+
+        // Mapeo de la ubicación
+        if (publicacion.getPublicacionInsumoUbicacion() != null) {
+            dto.setDireccion(publicacion.getPublicacionInsumoUbicacion().getDireccionUbicacion());
+            dto.setLongitud(publicacion.getPublicacionInsumoUbicacion().getLongitudUbicacion());
+            dto.setLatitud(publicacion.getPublicacionInsumoUbicacion().getLatitudUbicacion());
         }
 
         return dto;

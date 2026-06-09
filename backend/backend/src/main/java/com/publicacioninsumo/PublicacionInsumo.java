@@ -35,7 +35,7 @@ public class PublicacionInsumo {
     private String tituloPI;
 
     @Lob
-    @Column(name = "descripcion_pi", nullable = false)
+    @Column(name = "descripcion_pi", nullable = false, columnDefinition = "TEXT")
     private String descripcionPI;
 
     @Column(name = "fecha_hora_creacion_pi", nullable = true)

@@ -1,6 +1,6 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { ScrollToTop } from './ScrollToTop';
-import {  Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
+import {  Menu, X, LogOut, LayoutDashboard, Store, User } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import logoMesu from '../assets/images/isologo.png';
@@ -35,7 +35,7 @@ export function Layout() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <ScrollToTop />
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+      <header className="bg-white/85 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center gap-2">
@@ -45,13 +45,20 @@ export function Layout() {
             </Link>
 
             <nav className="hidden md:flex items-center gap-6">
-              <Link to="/marketplace" className="text-slate-700 hover:text-blue-600 transition">
+              <Link
+                to="/marketplace"
+                className="flex items-center gap-2 text-slate-700 hover:text-blue-600 transition font-medium px-3 py-2 rounded-lg hover:bg-slate-50"
+              >
+                <Store className="w-4 h-4 text-slate-500" />
                 Marketplace
               </Link>
               {isAuthenticated ? (
                 <>
-                  <Link to={getDashboardLink()} className="flex items-center gap-2 text-slate-700 hover:text-blue-600 transition">
-                    <LayoutDashboard className="w-4 h-4" />
+                  <Link
+                    to={getDashboardLink()}
+                    className="flex items-center gap-2 text-slate-700 hover:text-blue-600 transition font-medium px-3 py-2 rounded-lg hover:bg-slate-50"
+                  >
+                    <LayoutDashboard className="w-4 h-4 text-slate-500" />
                     Panel
                   </Link>
 
@@ -59,32 +66,31 @@ export function Layout() {
                       user?.roles.includes('PROPIETARIO')) && (
                     <Link
                       to="/account-settings"
-                      className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition font-medium"
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg transition font-medium"
                     >
-                      {user?.roles.includes('PROPIETARIO')
-                        ? 'Propietario'
-                        : 'Cliente'}
+                      <User className="w-4 h-4 text-blue-500" />
+                      Gestionar mi cuenta
                     </Link>
                   )}
-                  <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-                    <span className="text-sm text-slate-600">{user?.name}</span>
+                  <div className="flex items-center gap-4 pl-4 border-l border-slate-200">
+                    <span className="text-sm font-medium text-slate-700">{user?.name}</span>
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
+                      className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition font-medium"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="w-4 h-4 text-red-600" />
                       Salir
                     </button>
                   </div>
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="text-slate-700 hover:text-blue-600 transition">
+                  <Link to="/login" className="text-slate-700 hover:text-blue-600 transition font-medium px-3 py-2 rounded-lg hover:bg-slate-50">
                     Ingresar
                   </Link>
                   <Link
                     to="/register"
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium"
                   >
                     Registrarse
                   </Link>
@@ -106,18 +112,20 @@ export function Layout() {
             <div className="px-4 py-3 space-y-3">
               <Link
                 to="/marketplace"
-                className="block py-2 text-slate-700 hover:text-blue-600"
+                className="flex items-center gap-2 py-2 text-slate-700 hover:text-blue-600 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
+                <Store className="w-4 h-4 text-slate-500" />
                 Marketplace
               </Link>
               {isAuthenticated ? (
                 <>
                   <Link
                     to={getDashboardLink()}
-                    className="block py-2 text-slate-700 hover:text-blue-600"
+                    className="flex items-center gap-2 py-2 text-slate-700 hover:text-blue-600 font-medium"
                     onClick={() => setMobileMenuOpen(false)}
                   >
+                    <LayoutDashboard className="w-4 h-4 text-slate-500" />
                     Panel
                   </Link>
 
@@ -125,21 +133,20 @@ export function Layout() {
                       || user?.roles.includes('PROPIETARIO')) && (
                     <Link
                       to="/account-settings"
-                      className="block py-2 text-blue-700 hover:text-blue-900 font-medium"
+                      className="flex items-center gap-2 py-2 text-blue-600 hover:text-blue-800 font-medium"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      {user?.roles.includes('PROPIETARIO')
-                          ? 'Propietario'
-                          : 'Cliente'}
+                      <User className="w-4 h-4 text-blue-500" />
+                      Gestionar mi cuenta
                     </Link>
                   )}
                   <div className="pt-3 border-t border-slate-200">
-                    <p className="text-sm text-slate-600 mb-2">{user?.name}</p>
+                    <p className="text-sm font-medium text-slate-700 mb-2">{user?.name}</p>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-medium transition-colors"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="w-4 h-4 text-red-600" />
                       Salir
                     </button>
                   </div>
@@ -148,14 +155,14 @@ export function Layout() {
                 <>
                   <Link
                     to="/login"
-                    className="block py-2 text-slate-700 hover:text-blue-600"
+                    className="block py-2 text-slate-700 hover:text-blue-600 font-medium"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Ingresar
                   </Link>
                   <Link
                     to="/register"
-                    className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg"
+                    className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Registrarse

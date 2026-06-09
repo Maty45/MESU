@@ -1,5 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { publicacionInsumoService } from '../services/publicacionInsumoService';
 import type { PublicacionInsumoResponse } from '../types/publicacionInsumo';
 import { Button } from '../components/ui/button';
@@ -16,15 +18,18 @@ import {
   ArrowLeft,
   Heart,
   Share2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [product, setProduct] = useState<PublicacionInsumoResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const [showContactModal, setShowContactModal] = useState(false);
   const [message, setMessage] = useState('');
@@ -34,11 +39,90 @@ export function ProductDetail() {
   const [reportReason, setReportReason] = useState('');
   
 
+  // Estados de Administrar Publicación
+  const [interacciones, setInteracciones] = useState<any[]>([]);
+  const [loadingInteracciones, setLoadingInteracciones] = useState(false);
+  const [selectedInteraccion, setSelectedInteraccion] = useState<any | null>(null);
+  
+  // Modales de Operación
+  const [showAlquilerModal, setShowAlquilerModal] = useState(false);
+  const [showDevolucionModal, setShowDevolucionModal] = useState(false);
+  const [showConcretarConfirmModal, setShowConcretarConfirmModal] = useState(false);
+
+  // Campos de formulario
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHastaAcordada, setFechaHastaAcordada] = useState('');
+  const [montoAcordado, setMontoAcordado] = useState(0);
+  const [fechaDevolucion, setFechaDevolucion] = useState('');
+  const [concrecionType, setConcrecionType] = useState<'VENTA' | 'DONACION' | null>(null);
+
+  const isOwner = user && product && (
+    product.nombreUsuario && product.apellidoUsuario
+      ? `${product.nombreUsuario} ${product.apellidoUsuario}`.trim().toLowerCase() === user.name.trim().toLowerCase()
+      : false
+  );
+
   useEffect(() => {
     if (id) {
       fetchProduct(parseInt(id));
     }
   }, [id]);
+
+  useEffect(() => {
+    if (id && isOwner) {
+      fetchInteracciones(parseInt(id));
+    }
+  }, [id, isOwner]);
+
+  // Map refs
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+
+  // Map initialization and update
+  useEffect(() => {
+    if (!product || !mapContainerRef.current) return;
+    const { latitud, longitud } = product;
+    if (!latitud || !longitud || (latitud === 0 && longitud === 0)) return;
+
+    // Inicializar o limpiar mapa existente
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
+
+    const map = L.map(mapContainerRef.current, {
+      scrollWheelZoom: false // Evita zoom accidental al hacer scroll
+    }).setView([latitud, longitud], 15);
+    mapInstanceRef.current = map;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    const customIcon = L.divIcon({
+      html: `<div class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white shadow-lg border-2 border-white">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+             </div>`,
+      className: 'custom-leaflet-marker',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32]
+    });
+
+    L.marker([latitud, longitud], { icon: customIcon }).addTo(map);
+
+    // Ajustar tamaño del mapa después del renderizado para evitar problemas de mosaico
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [product]);
 
   const fetchProduct = async (productId: number) => {
     try {
@@ -52,6 +136,117 @@ export function ProductDetail() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchInteracciones = async (productId: number) => {
+    try {
+      setLoadingInteracciones(true);
+      const data = await publicacionInsumoService.getInteracciones(productId);
+      setInteracciones(data);
+    } catch (err: any) {
+      console.error('Error al cargar interacciones:', err);
+    } finally {
+      setLoadingInteracciones(false);
+    }
+  };
+
+  const handleContact = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    setShowContactModal(true);
+  };
+
+  const handleSendMessage = async () => {
+    if (!product) return;
+    try {
+      await publicacionInsumoService.registrarContacto(product.id);
+      alert(`Contacto registrado. Mensaje enviado al propietario. Recibirás una respuesta pronto.`);
+      setShowContactModal(false);
+      setMessage('');
+    } catch (err: any) {
+      alert('Error al registrar el contacto: ' + err.message);
+    }
+  };
+
+  const handleRegistrarAlquilerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedInteraccion) return;
+    try {
+      await publicacionInsumoService.concretarInteraccion(selectedInteraccion.idPII, {
+        tipoInteraccionConcretada: 'ALQUILER',
+        fechaDesde,
+        fechaHastaAcordada,
+        montoAcordado
+      });
+      alert('Alquiler registrado con éxito. El insumo ahora está alquilado.');
+      setShowAlquilerModal(false);
+      if (id) {
+        fetchProduct(parseInt(id));
+        fetchInteracciones(parseInt(id));
+      }
+    } catch (err: any) {
+      alert('Error al registrar alquiler: ' + err.message);
+    }
+  };
+
+  const handleRegistrarDevolucionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!product) return;
+    try {
+      await publicacionInsumoService.registrarDevolucion(product.id, {
+        fechaDevolucion: fechaDevolucion || null
+      });
+      alert('Devolución registrada con éxito. La publicación vuelve a estar activa.');
+      setShowDevolucionModal(false);
+      if (id) {
+        fetchProduct(parseInt(id));
+        fetchInteracciones(parseInt(id));
+      }
+    } catch (err: any) {
+      alert('Error al registrar devolución: ' + err.message);
+    }
+  };
+
+  const handleConcretarConfirmSubmit = async () => {
+    if (!selectedInteraccion || !concrecionType) return;
+    try {
+      await publicacionInsumoService.concretarInteraccion(selectedInteraccion.idPII, {
+        tipoInteraccionConcretada: concrecionType
+      });
+      alert(`${concrecionType === 'VENTA' ? 'Venta' : 'Donación'} registrada con éxito. La publicación ha finalizado.`);
+      setShowConcretarConfirmModal(false);
+      if (id) {
+        fetchProduct(parseInt(id));
+        fetchInteracciones(parseInt(id));
+      }
+    } catch (err: any) {
+      alert(`Error al registrar ${concrecionType === 'VENTA' ? 'venta' : 'donación'}: ` + err.message);
+    }
+  };
+
+  const handleReport = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    setShowConfirmReportModal(true);
+  };
+
+  const handleConfirmReport = () => {
+    setShowConfirmReportModal(false);
+    setShowReportModal(true);
+  };
+
+  const handleCancelReport = () => {
+    setShowConfirmReportModal(false);
+  };
+
+  const handleSubmitReport = () => {
+    alert('Reporte enviado. Nuestro equipo lo revisará pronto.');
+    setShowReportModal(false);
+    setReportReason('');
   };
 
   if (loading) {
@@ -80,14 +275,8 @@ export function ProductDetail() {
     ? `${product.nombreUsuario} ${product.apellidoUsuario}`
     : 'Usuario MESU';
 
-  const handleContact = () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    setShowContactModal(true);
-  };
 
+<<<<<<< HEAD
   const handleSendMessage = () => {
     alert(`Mensaje enviado al propietario. Recibirás una respuesta pronto.`);
     setShowContactModal(false);
@@ -153,6 +342,8 @@ export function ProductDetail() {
     alert("No se pudo enviar el reporte");
   }
 };
+=======
+>>>>>>> developer
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
@@ -166,20 +357,62 @@ export function ProductDetail() {
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div>
-            <div className="aspect-square bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 mb-4">
+          <div className="flex flex-col h-full">
+            <div className="aspect-square bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 mb-4 relative group">
               {product.urlsImagenes && product.urlsImagenes.length > 0 ? (
-                <img
-                  src={product.urlsImagenes[0]}
-                  alt={product.titulo}
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  <img
+                    src={product.urlsImagenes[activeImageIndex]}
+                    alt={product.titulo}
+                    className="w-full h-full object-cover transition-all duration-300"
+                  />
+                  {product.urlsImagenes.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setActiveImageIndex((prev) => (prev === 0 ? product.urlsImagenes.length - 1 : prev - 1))}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-slate-800 flex items-center justify-center shadow-md transition opacity-0 group-hover:opacity-100 duration-200"
+                        title="Imagen anterior"
+                      >
+                        <ChevronLeft className="w-6 h-6" />
+                      </button>
+                      <button
+                        onClick={() => setActiveImageIndex((prev) => (prev === product.urlsImagenes.length - 1 ? 0 : prev + 1))}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-slate-800 flex items-center justify-center shadow-md transition opacity-0 group-hover:opacity-100 duration-200"
+                        title="Siguiente imagen"
+                      >
+                        <ChevronRight className="w-6 h-6" />
+                      </button>
+                      
+                      {/* Mini indicador de posición */}
+                      <div className="absolute bottom-3 right-3 bg-black/60 text-white px-2 py-0.5 rounded-full text-xs font-medium">
+                        {activeImageIndex + 1} / {product.urlsImagenes.length}
+                      </div>
+                    </>
+                  )}
+                </>
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-slate-400">
                   Sin Imagen
                 </div>
               )}
             </div>
+
+            {/* Carrusel Miniaturas */}
+            {product.urlsImagenes && product.urlsImagenes.length > 1 && (
+              <div className="flex gap-2 mb-4 overflow-x-auto pb-1 max-w-full">
+                {product.urlsImagenes.map((url, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
+                      idx === activeImageIndex ? 'border-blue-500 shadow-sm' : 'border-slate-200 hover:border-slate-400'
+                    }`}
+                  >
+                    <img src={url} alt={`Vista previa ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="flex gap-3">
               <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">
@@ -191,9 +424,32 @@ export function ProductDetail() {
                 Compartir
               </button>
             </div>
+
+            <Card className="mt-6 lg:mt-auto border-slate-200">
+              <CardHeader>
+                <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Información del propietario
+                </h3>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
+                    {ownerName.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-medium text-slate-900">{ownerName}</div>
+                    <div className="text-sm text-slate-500">Propietario verificado</div>
+                  </div>
+                </div>
+                <div className="text-sm text-slate-600">
+                  Miembro de MESU • Productos ortopédicos verificados
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          <div>
+          <div className="flex flex-col h-full">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -259,30 +515,230 @@ export function ProductDetail() {
               </div>
             </div>
 
-            <Card>
-              <CardHeader>
-                <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Información del propietario
-                </h3>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
-                    {ownerName.charAt(0)}
+            {product.latitud && product.longitud && (product.latitud !== 0 || product.longitud !== 0) ? (
+              <Card className="mt-6 lg:mt-auto overflow-hidden border-slate-200">
+                <CardHeader className="pb-3">
+                  <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-blue-600" />
+                    Ubicación del insumo
+                  </h3>
+                </CardHeader>
+                <CardContent className="p-0 relative">
+                  <div 
+                    ref={mapContainerRef} 
+                    className="h-64 w-full z-10"
+                  />
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 text-xs text-slate-500 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
+                    <span>{product.direccion}</span>
                   </div>
+                </CardContent>
+              </Card>
+            ) : null}
+
+
+          </div>
+        </div>
+
+        {/* Panel de administración */}
+        {isOwner && (
+          <div className="mt-8">
+            <Card className="border-slate-200">
+              <CardHeader className="bg-slate-50 border-b border-slate-200 py-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
-                    <div className="font-medium text-slate-900">{ownerName}</div>
-                    <div className="text-sm text-slate-500">Propietario verificado</div>
+                    <h3 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
+                      <Package className="w-5 h-5 text-blue-600" />
+                      Administración de la Publicación
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1">Gestioná las interacciones y el estado del insumo</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-500">Estado publicación:</span>
+                    <Badge variant={
+                      product.nombreEstadoPublicacion.toUpperCase() === 'ACTIVA' ? 'success' :
+                      product.nombreEstadoPublicacion.toUpperCase() === 'ALQUILADA' ? 'info' : 'warning'
+                    }>
+                      {product.nombreEstadoPublicacion}
+                    </Badge>
                   </div>
                 </div>
-                <div className="text-sm text-slate-600">
-                  Miembro de MESU • Productos ortopédicos verificados
-                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                {loadingInteracciones ? (
+                  <div className="text-center py-6 text-slate-500">Cargando interacciones...</div>
+                ) : (
+                  <div>
+                    <h4 className="font-medium text-slate-900 mb-4 flex items-center gap-2">
+                      Historial de Interacciones 
+                      {product.nombreEstadoPublicacion.toUpperCase() === 'ALQUILADA' && (
+                        <span className="text-sm font-normal text-slate-500">(Mostrando alquileres activos)</span>
+                      )}
+                    </h4>
+                    
+                    {(() => {
+                      const displayed = product.nombreEstadoPublicacion.toUpperCase() === 'ALQUILADA'
+                        ? interacciones.filter(i => i.nombreTipoInteraccion.toUpperCase() === 'ALQUILER')
+                        : interacciones;
+
+                      if (displayed.length === 0) {
+                        return (
+                          <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                            <User className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                            <p className="text-slate-600 font-medium">No hay interacciones registradas aún</p>
+                            <p className="text-sm text-slate-500 mt-1">Las consultas de los clientes aparecerán en este panel.</p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-sm text-slate-600 border-collapse">
+                            <thead>
+                              <tr className="border-b border-slate-200 text-slate-700 bg-slate-50 font-semibold">
+                                <th className="py-3 px-4">Fecha y Hora</th>
+                                <th className="py-3 px-4">Cliente</th>
+                                <th className="py-3 px-4">Contacto</th>
+                                <th className="py-3 px-4">Tipo</th>
+                                <th className="py-3 px-4">Detalle Operación</th>
+                                <th className="py-3 px-4 text-right">Operaciones</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {displayed.map((i) => {
+                                const isContacto = i.nombreTipoInteraccion.toUpperCase() === 'CONTACTO';
+                                const isAlquiler = i.nombreTipoInteraccion.toUpperCase() === 'ALQUILER';
+                                const isDevolucion = i.nombreTipoInteraccion.toUpperCase() === 'DEVOLUCION';
+                                const isVenta = i.nombreTipoInteraccion.toUpperCase() === 'VENTA';
+                                const isDonacion = i.nombreTipoInteraccion.toUpperCase() === 'DONACION';
+                                
+                                return (
+                                  <tr key={i.idPII} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                                    <td className="py-4 px-4 font-medium text-slate-900">
+                                      {new Date(i.fechaHPII).toLocaleString('es-AR')}
+                                    </td>
+                                    <td className="py-4 px-4">
+                                      <div className="font-semibold text-slate-900">
+                                        {i.nombreUsuarioCliente} {i.apellidoUsuarioCliente}
+                                      </div>
+                                      <div className="text-xs text-slate-500">{i.emailUsuarioCliente}</div>
+                                    </td>
+                                    <td className="py-4 px-4">
+                                      <a
+                                        href={`https://wa.me/${i.telefonoUsuarioCliente}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-emerald-600 hover:text-emerald-700 font-medium inline-flex items-center gap-1 hover:underline"
+                                      >
+                                        <MessageCircle className="w-4 h-4" />
+                                        WhatsApp
+                                      </a>
+                                    </td>
+                                    <td className="py-4 px-4">
+                                      <Badge variant={
+                                        isContacto ? 'default' :
+                                        isAlquiler ? 'info' :
+                                        isDevolucion ? 'success' :
+                                        isVenta ? 'warning' : 'success'
+                                      }>
+                                        {i.nombreTipoInteraccion}
+                                      </Badge>
+                                    </td>
+                                    <td className="py-4 px-4 text-xs text-slate-500">
+                                      {isAlquiler && (
+                                        <div>
+                                          <div>Desde: {new Date(i.fechaDesdeAI).toLocaleDateString('es-AR')}</div>
+                                          <div>Hasta: {new Date(i.fechaHastaAcordadaAI).toLocaleDateString('es-AR')}</div>
+                                          {i.fechaHastaRealAI && (
+                                            <div className="text-green-600 font-medium">Devuelto: {new Date(i.fechaHastaRealAI).toLocaleDateString('es-AR')}</div>
+                                          )}
+                                          <div className="font-medium text-slate-900 mt-1">Monto: ${i.montoAcordadoAI}</div>
+                                        </div>
+                                      )}
+                                      {isDevolucion && (
+                                        <div>
+                                          <div>Devolución registrada</div>
+                                          {i.fechaHastaRealAI && (
+                                            <div>Fecha: {new Date(i.fechaHastaRealAI).toLocaleDateString('es-AR')}</div>
+                                          )}
+                                        </div>
+                                      )}
+                                      {(isVenta || isDonacion) && <div>Operación finalizada</div>}
+                                      {isContacto && <div>En espera de concreción</div>}
+                                    </td>
+                                    <td className="py-4 px-4 text-right">
+                                      {isContacto && product.nombreEstadoPublicacion.toUpperCase() === 'ACTIVA' && (
+                                        <div className="flex justify-end gap-2">
+                                          {product.nombreTipoOperacion.toUpperCase() === 'ALQUILER' && (
+                                            <Button
+                                              size="sm"
+                                              onClick={() => {
+                                                setSelectedInteraccion(i);
+                                                setFechaDesde(new Date().toISOString().split('T')[0]);
+                                                setFechaHastaAcordada('');
+                                                setMontoAcordado(product.monto || 0);
+                                                setShowAlquilerModal(true);
+                                              }}
+                                            >
+                                              Registrar alquiler
+                                            </Button>
+                                          )}
+                                          {product.nombreTipoOperacion.toUpperCase() === 'VENTA' && (
+                                            <Button
+                                              size="sm"
+                                              variant="secondary"
+                                              onClick={() => {
+                                                setSelectedInteraccion(i);
+                                                setConcrecionType('VENTA');
+                                                setShowConcretarConfirmModal(true);
+                                              }}
+                                            >
+                                              Registrar venta
+                                            </Button>
+                                          )}
+                                          {product.nombreTipoOperacion.toUpperCase() === 'DONACION' && (
+                                            <Button
+                                              size="sm"
+                                              className="bg-green-600 hover:bg-green-700 text-white"
+                                              onClick={() => {
+                                                setSelectedInteraccion(i);
+                                                setConcrecionType('DONACION');
+                                                setShowConcretarConfirmModal(true);
+                                              }}
+                                            >
+                                              Registrar donación
+                                            </Button>
+                                          )}
+                                        </div>
+                                      )}
+                                      {isAlquiler && product.nombreEstadoPublicacion.toUpperCase() === 'ALQUILADA' && !i.fechaHastaRealAI && (
+                                        <Button
+                                          size="sm"
+                                          className="bg-amber-600 hover:bg-amber-700 text-white"
+                                          onClick={() => {
+                                            setSelectedInteraccion(i);
+                                            setFechaDevolucion(new Date().toISOString().split('T')[0]);
+                                            setShowDevolucionModal(true);
+                                          }}
+                                        >
+                                          Registrar devolución
+                                        </Button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
-        </div>
+        )}
       </div>
 
       {showContactModal && (
@@ -374,6 +830,125 @@ export function ProductDetail() {
               </Button>
               <Button onClick={handleSubmitReport} className="flex-1">
                 Enviar reporte
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Registrar Alquiler */}
+      {showAlquilerModal && selectedInteraccion && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <form onSubmit={handleRegistrarAlquilerSubmit} className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Registrar Alquiler</h2>
+            <p className="text-sm text-slate-500 mb-4">
+              Cliente: {selectedInteraccion.nombreUsuarioCliente} {selectedInteraccion.apellidoUsuarioCliente}
+            </p>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Fecha Desde</label>
+                <input
+                  type="date"
+                  required
+                  value={fechaDesde}
+                  onChange={(e) => setFechaDesde(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Fecha Hasta Acordada</label>
+                <input
+                  type="date"
+                  required
+                  value={fechaHastaAcordada}
+                  onChange={(e) => setFechaHastaAcordada(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Monto Acordado ($)</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={montoAcordado}
+                  onChange={(e) => setMontoAcordado(parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button type="button" onClick={() => setShowAlquilerModal(false)} variant="outline" className="flex-1">
+                Cancelar
+              </Button>
+              <Button type="submit" className="flex-1">
+                Registrar Alquiler
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal para Registrar Devolución */}
+      {showDevolucionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <form onSubmit={handleRegistrarDevolucionSubmit} className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Registrar Devolución</h2>
+            <p className="text-sm text-slate-500 mb-4">
+              Registrá el retorno del producto ortopédico.
+            </p>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Fecha de Devolución Real</label>
+              <input
+                type="date"
+                required
+                value={fechaDevolucion}
+                onChange={(e) => setFechaDevolucion(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div className="flex gap-3">
+              <Button type="button" onClick={() => setShowDevolucionModal(false)} variant="outline" className="flex-1">
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white flex-1">
+                Registrar Devolución
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Confirmación de Venta / Donación */}
+      {showConcretarConfirmModal && selectedInteraccion && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Confirmar Concreción</h2>
+            <p className="text-slate-600 mb-6">
+              ¿Confirmas que concretaste la {concrecionType === 'VENTA' ? 'venta' : 'donación'} con{' '}
+              <span className="font-semibold text-slate-900">
+                {selectedInteraccion.nombreUsuarioCliente} {selectedInteraccion.apellidoUsuarioCliente}
+              </span>
+              ? Esta acción finalizará la publicación.
+            </p>
+            
+            <div className="flex gap-3">
+              <Button onClick={() => setShowConcretarConfirmModal(false)} variant="outline" className="flex-1">
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleConcretarConfirmSubmit}
+                className={`flex-1 text-white ${
+                  concrecionType === 'VENTA' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                Confirmar
               </Button>
             </div>
           </div>

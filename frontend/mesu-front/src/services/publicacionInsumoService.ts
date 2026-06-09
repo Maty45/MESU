@@ -7,6 +7,11 @@ export const publicacionInsumoService = {
     return response.json();
   },
 
+  getMisPublicaciones: async (): Promise<PublicacionInsumoResponse[]> => {
+    const response = await fetchApi('/api/publicaciones/mis-publicaciones');
+    return response.json();
+  },
+
   getById: async (id: number): Promise<PublicacionInsumoResponse> => {
     const response = await fetchApi(`/api/publicaciones/${id}`);
     return response.json();
@@ -46,5 +51,43 @@ export const publicacionInsumoService = {
     
     const data = await response.json();
     return data.url;
+  },
+
+  getInteracciones: async (idPublicacion: number): Promise<any[]> => {
+    const response = await fetchApi(`/api/interacciones/publicacion/${idPublicacion}`);
+    return response.json();
+  },
+
+  concretarInteraccion: async (idInteraccion: number, data: { tipoInteraccionConcretada: string; fechaDesde?: string | null; fechaHastaAcordada?: string | null; montoAcordado?: number | null }): Promise<any> => {
+    const response = await fetchApi(`/api/interacciones/${idInteraccion}/concretar`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  registrarDevolucion: async (idPublicacion: number, data?: { fechaDevolucion?: string | null }): Promise<any> => {
+    const response = await fetchApi(`/api/publicaciones/${idPublicacion}/registrar-devolucion`, {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
+    });
+    return response.json();
+  },
+
+  registrarContacto: async (idPublicacion: number): Promise<any> => {
+    const response = await fetchApi(`/api/interacciones/publicacion/${idPublicacion}/contacto`, {
+      method: 'POST',
+    });
+    return response.json();
+  },
+
+  getMisOperaciones: async (): Promise<any[]> => {
+    const response = await fetchApi('/api/interacciones/mis-operaciones');
+    return response.json();
+  },
+
+  getMisAlquileresActivos: async (): Promise<any[]> => {
+    const response = await fetchApi('/api/interacciones/mis-alquileres-activos');
+    return response.json();
   }
 };

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { mockProducts, mockOperations, mockReports, categoryLabels, type ProductCategory } from '../data/mockData';
+import { mockProducts, mockOperations, mockReports, categoryLabels } from '../data/mockData';
+import type { ProductCategory } from '../data/mockData';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -17,8 +18,7 @@ import {
   ShieldCheck,
   DollarSign,
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'; // Import useEffect
-import { useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 // Define the DTO types based on backend structure
 interface RolDTO {
@@ -44,12 +44,34 @@ interface UsuarioDTO {
   usuarioRoles: UsuarioRolDTO[];
 }
 
+interface PublicacionInsumoResponseDTO {
+  id: number;
+  titulo: string;
+  descripcion: string;
+  fecha: string; // LocalDate from Java will be a string in JS
+  nombreTipoOperacion: string;
+  monto: number | null;
+  unidadTiempo: string | null;
+  nombreEstadoPublicacion: string;
+  nombreEstadoInsumo: string;
+  nombreTipoInsumo: string;
+  nombreUsuario: string;
+  apellidoUsuario: string;
+  // urlsImagenes: string[]; // Excluded as per user request
+}
+
+// Removed AuthUserWithToken interface as it's no longer needed.
+// The 'user' object from useAuth() now directly contains the token.
+
 export function AdminDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'users' | 'reports'>('overview');
   const [backendUsers, setBackendUsers] = useState<UsuarioDTO[]>([]); // State to store fetched users
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [backendPublications, setBackendPublications] = useState<PublicacionInsumoResponseDTO[]>([]);
+  const [loadingPublications, setLoadingPublications] = useState(false);
+  const [errorPublications, setErrorPublications] = useState<string | null>(null);
   const [errorUsers, setErrorUsers] = useState<string | null>(null);
 
   if (!user || !user.roles.includes('ADMIN')) {
@@ -64,8 +86,8 @@ export function AdminDashboard() {
     );
   }
 
-  const totalUsers = backendUsers.length; // Use fetched users count
-  const totalProducts = mockProducts.length;
+  const totalUsers = backendUsers.length;
+  const totalProducts = backendPublications.length;
   const totalOperations = mockOperations.length;
   const pendingReports = mockReports.filter((r) => r.status === 'pending').length;
 
@@ -88,7 +110,17 @@ export function AdminDashboard() {
     setLoadingUsers(true);
     setErrorUsers(null);
     try {
-      const response = await fetch('http://localhost:8080/api/usuario'); // Assuming backend runs on 8080
+      if (!user || !user.token) { // Check if user or token is missing
+        console.error("Authentication token is missing for fetching users.");
+        setErrorUsers("No autorizado: token de usuario no disponible.");
+        navigate('/login');
+        return;
+      }
+      const response = await fetch('http://localhost:8080/api/usuario', {
+        headers: {
+          'Authorization': `Bearer ${user.token}`,
+        },
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -102,38 +134,134 @@ export function AdminDashboard() {
     }
   };
 
+  const fetchPublications = async () => {
+    setLoadingPublications(true);
+    setErrorPublications(null);
+    try {
+      if (!user || !user.token) { // Check if user or token is missing
+        console.error("Authentication token is missing for fetching publications.");
+        setErrorPublications("No autorizado: token de usuario no disponible.");
+        navigate('/login');
+        return;
+      }
+      const response = await fetch('http://localhost:8080/api/publicaciones/obtenerPublicaciones', {
+        headers: {
+          'Authorization': `Bearer ${user.token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data: PublicacionInsumoResponseDTO[] = await response.json();
+      setBackendPublications(data);
+    } catch (error) {
+      console.error("Error fetching publications:", error);
+      setErrorPublications("Error al cargar las publicaciones.");
+    } finally {
+      setLoadingPublications(false);
+    }
+  };
+
+
   useEffect(() => {
     if (activeTab === 'users') {
       fetchUsers();
     }
   }, [activeTab]);
 
-  const handleDeleteProduct = (productId: string) => {
-    if (confirm('¿Estás seguro de eliminar este producto?')) {
-      // usar productId para evitar warning de variable no usada
-      console.log('Eliminar producto:', productId);
-      alert(`Producto ${productId} eliminado por el administrador.`);
+  const handleDeleteProduct = async (productId: number) => {
+    if (confirm(`¿Estás seguro de eliminar la publicación con ID: ${productId}?`)) {
+      try {
+        // Ensure user and token are available before making the request
+        if (!user || !user.token) { // Direct access to user.token
+          console.error("Authentication token is missing. Redirecting to login.");
+          setErrorPublications("No autorizado: token de usuario no disponible.");
+          navigate('/login');
+          return;
+        }
+
+        const response = await fetch(`http://localhost:8080/api/publicaciones/delete?id=${productId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${user.token}`, // Use the user.token directly
+          },
+        });
+        if (!response.ok) {
+          // Handle specific HTTP error codes from backend
+          if (response.status === 401) {
+            setErrorPublications("Tu sesión ha expirado. Por favor, vuelve a ingresar.");
+            navigate('/login');
+          } else if (response.status === 403) {
+            setErrorPublications("No tienes permisos suficientes para realizar esta acción.");
+          } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+        }
+        console.log('Eliminar publicación:', productId);
+        alert(`Publicación ${productId} marcada como ELIMINADA por el administrador.`);
+        // Re-fetch publications to update the table
+        fetchPublications();
+      } catch (error) {
+        console.error("Error deleting publication:", error);
+        setErrorPublications("Error al eliminar la publicación.");
+      }
     }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'products') {
+      fetchPublications();
+    }
+  }, [activeTab]);
+
+  const getPublicationStatusBadge = (status: string) => {
+    switch (status.toUpperCase()) {
+      case 'ACTIVA':
+        return 'success';
+      case 'PENDIENTE':
+        return 'warning';
+      case 'ELIMINADA':
+        return 'destructive';
+      default:
+        return 'default';
+    }
+  };
+
+  const getOperationBadge = (type: string) => {
+    const variants = {
+      DONACION: 'success' as const,
+      ALQUILER: 'info' as const,
+      VENTA: 'warning' as const,
+    };
+    return variants[type.toUpperCase() as keyof typeof variants] || 'default';
   };
 
 
   const handleDeleteUser = async (dni: number) => { 
     if (confirm(`¿Estás seguro de eliminar al usuario con DNI: ${dni}?`)) {
       try {
+        if (!user || !user.token) { // Check if user or token is missing
+          console.error("Authentication token is missing for deleting user.");
+          setErrorUsers("No autorizado: token de usuario no disponible.");
+          navigate('/login');
+          return;
+        }
         const response = await fetch(`http://localhost:8080/api/usuario/delete?dni=${dni}`, {
           method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${user.token}`,
+          },
         });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         setBackendUsers((prevUsers) => prevUsers.filter((user) => user.dniUsuario !== dni));
+        console.log('Eliminar usuario con DNI:', dni);
+        alert(`Usuario con DNI ${dni} eliminado del sistema.`);
       } catch (error) {
         console.error("Error deleting user:", error);
         setErrorUsers("Error al eliminar el usuario.");
       }
-
-      console.log('Eliminar usuario con DNI:', dni);
-      alert(`Usuario con DNI ${dni} eliminado del sistema.`);
     }
   };
 
@@ -327,51 +455,65 @@ export function AdminDashboard() {
               <h2 className="text-xl font-semibold text-slate-900">Gestión de Productos</h2>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              {loadingPublications && <div className="text-center py-8 text-slate-600">Cargando publicaciones...</div>}
+              {errorPublications && <div className="text-center py-8 text-red-600">{errorPublications}</div>}
+              {!loadingPublications && !errorPublications && backendPublications.length === 0 && (
+                <div className="text-center py-12">
+                  <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">No se encontraron publicaciones</h3>
+                  <p className="text-slate-600">Intenta recargar la página o verifica la conexión con el backend.</p>
+                </div>
+              )}
+              {!loadingPublications && !errorPublications && backendPublications.length > 0 && (
+                <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-200">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Producto</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Título</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Propietario</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Categoría</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Estado</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Fecha</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Tipo Insumo</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Operación</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Estado Publicación</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Fecha Publicación</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Monto</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-slate-700">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {mockProducts.map((product) => (
-                      <tr key={product.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    {backendPublications.map((publication) => (
+                      <tr key={publication.id} className="border-b border-slate-100 hover:bg-slate-50">
                         <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={product.images[0]}
-                              alt={product.title}
-                              className="w-12 h-12 object-cover rounded-lg"
-                            />
-                            <div className="font-medium text-slate-900">{product.title}</div>
-                          </div>
+                          <div className="font-medium text-slate-900">{publication.titulo}</div>
                         </td>
-                        <td className="py-3 px-4 text-slate-600">{product.ownerName}</td>
-                        <td className="py-3 px-4 text-slate-600">{categoryLabels[product.category]}</td>
+                        <td className="py-3 px-4 text-slate-600">{publication.nombreUsuario} {publication.apellidoUsuario}</td>
+                        <td className="py-3 px-4 text-slate-600">{publication.nombreTipoInsumo}</td>
                         <td className="py-3 px-4">
-                          <Badge variant={product.status === 'available' ? 'success' : 'default'}>
-                            {product.status === 'available' ? 'Disponible' : product.status}
+                          <Badge variant={getOperationBadge(publication.nombreTipoOperacion)}>
+                            {publication.nombreTipoOperacion}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge variant={getPublicationStatusBadge(publication.nombreEstadoPublicacion) as any}>
+                            {publication.nombreEstadoPublicacion}
                           </Badge>
                         </td>
                         <td className="py-3 px-4 text-sm text-slate-600">
-                          {new Date(product.createdAt).toLocaleDateString('es-AR')}
+                          {new Date(publication.fecha).toLocaleDateString('es-AR')}
+                        </td>
+                        <td className="py-3 px-4 font-medium text-slate-900">
+                          {publication.monto ? `$${publication.monto.toLocaleString()}` : 'Gratis'}
+                          {publication.unidadTiempo && `/${publication.unidadTiempo}`}
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => navigate(`/product/${product.id}`)}
+                              onClick={() => navigate(`/product/${publication.id}`)} // Assuming product detail page exists
                               className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded transition"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => handleDeleteProduct(product.id)}
+                              onClick={() => handleDeleteProduct(publication.id)}
                               className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded transition"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -382,7 +524,8 @@ export function AdminDashboard() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+                  </div>
+                )}
             </CardContent>
           </Card>
         )}
