@@ -3,6 +3,7 @@ package com.publicacioninsumo;
 import com.alquilerinsumo.AlquilerInsumo;
 import com.estadoinsumo.EstadoInsumo;
 import com.estadopublicacioninsumo.EstadoPublicacionInsumo;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.publicacioninsumoimagen.PublicacionInsumoImagen;
 import com.tipoinsumo.TipoInsumo;
 import com.ubicacion.PublicacionInsumoUbicacion;
@@ -25,6 +26,7 @@ import java.util.List;
 //Anotaciones JPA
 @Entity
 @Table(name = "publicacion_insumo")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class PublicacionInsumo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

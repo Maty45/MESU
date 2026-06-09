@@ -23,7 +23,7 @@ public record UsuarioCreateDTO(
         @Size(min = 8)
         String contraseniaUsuario,
 
-        @NotNull
+        @NotBlank
         Long telefonoUsuario
 ) {
 }

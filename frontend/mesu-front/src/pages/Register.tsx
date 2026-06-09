@@ -27,7 +27,6 @@ export function Register() {
     }
 
     try {
-
       await register(
         dni,
         name,
@@ -43,6 +42,24 @@ export function Register() {
     } catch (error) {
       console.error(error);
       alert('Error al registrar usuario');
+    }
+  };
+
+  // Escudo para el DNI: Borra letras/símbolos al toque y limita a 8 dígitos max
+  const handleDniChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const soloNumeros = value.replace(/[^0-9]/g, '');
+    if (soloNumeros.length <= 8) {
+      setDni(soloNumeros);
+    }
+  };
+
+  // Escudo para el Teléfono: Borra caracteres raros y limita a 15 dígitos max (evita desborde de Long)
+  const handleTelefonoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const soloNumeros = value.replace(/[^0-9]/g, '');
+    if (soloNumeros.length <= 15) {
+      setTelefono(soloNumeros);
     }
   };
 
@@ -73,8 +90,10 @@ export function Register() {
               label="DNI"
               placeholder="12345678"
               value={dni}
-              onChange={(e) => setDni(e.target.value)}
+              onChange={handleDniChange}
               required
+              pattern="[0-9]{7,8}" 
+              title="El DNI debe contener entre 7 y 8 números enteros."
             />
 
             <Input
@@ -102,6 +121,7 @@ export function Register() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="username" // Obliga al navegador a usar este campo como el usuario guardado
             />
 
             <Input
@@ -109,18 +129,22 @@ export function Register() {
               label="Teléfono"
               placeholder="2615551234"
               value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
+              onChange={handleTelefonoChange}
               required
+              pattern="[0-9]{10,15}"
+              title="El teléfono debe tener entre 10 y 15 números puros, sin guiones ni espacios."
+              autoComplete="tel" // Le avisa al navegador que es solo un teléfono común
             />
 
             <Input
               type="password"
               label="Contraseña"
               placeholder="••••••••"
-                minLength={9}
+              minLength={9}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="new-password" // Vincula esta contraseña al correo electrónico de arriba
             />
 
             <Input
@@ -131,6 +155,7 @@ export function Register() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
+              autoComplete="new-password"
             />
 
             <div className="flex items-start gap-2">

@@ -1,5 +1,6 @@
 package com.reporte;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.usuario.Usuario;
 import com.publicacioninsumo.PublicacionInsumo;
 import jakarta.persistence.*;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 //Anotaciones JPA
 @Entity
 @Table(name = "reporte")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Reporte {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,14 +36,17 @@ public class Reporte {
     private String detalleReporte;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"usuarioRoles", "contraseniaUsuario", "fechaHRegistroUsuario", "fechaHBajaUsuario"})
     @JoinColumn(name = "id_usuario_reportante", nullable = false)
     private Usuario usuarioReportante;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"usuarioRoles", "contraseniaUsuario", "fechaHRegistroUsuario", "fechaHBajaUsuario"})
     @JoinColumn(name = "id_usuario_reportado")
     private Usuario usuarioReportado;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"usuario"})
     @JoinColumn(name = "id_publicacion_insumo_reportada")
     private PublicacionInsumo publicacionInsumoReportada;
 }

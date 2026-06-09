@@ -3,6 +3,7 @@ package com.reporte;
 import com.dto.ReportePublicacionRequest;
 import com.dto.ReporteUsuarioRequest;
 import com.jwt.JwtService;
+import com.reporte.dto.ReporteDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -58,11 +59,9 @@ public class ReporteController {
         return ResponseEntity.ok().build();
     }
     @GetMapping
-    public ResponseEntity<List<Reporte>> listarReportes() {
-
+    public ResponseEntity<List<ReporteDTO>> listarReportes() {
         return ResponseEntity.ok(
                 reporteService.obtenerTodosLosReportes()
         );
-
     }
 }
