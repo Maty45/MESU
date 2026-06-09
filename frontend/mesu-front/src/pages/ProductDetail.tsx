@@ -1,5 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { publicacionInsumoService } from '../services/publicacionInsumoService';
 import type { PublicacionInsumoResponse } from '../types/publicacionInsumo';
 import { Button } from '../components/ui/button';
@@ -69,6 +71,56 @@ export function ProductDetail() {
       fetchInteracciones(parseInt(id));
     }
   }, [id, isOwner]);
+
+  // Map refs
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+
+  // Map initialization and update
+  useEffect(() => {
+    if (!product || !mapContainerRef.current) return;
+    const { latitud, longitud } = product;
+    if (!latitud || !longitud || (latitud === 0 && longitud === 0)) return;
+
+    // Inicializar o limpiar mapa existente
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
+
+    const map = L.map(mapContainerRef.current, {
+      scrollWheelZoom: false // Evita zoom accidental al hacer scroll
+    }).setView([latitud, longitud], 15);
+    mapInstanceRef.current = map;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    const customIcon = L.divIcon({
+      html: `<div class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white shadow-lg border-2 border-white">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+             </div>`,
+      className: 'custom-leaflet-marker',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32]
+    });
+
+    L.marker([latitud, longitud], { icon: customIcon }).addTo(map);
+
+    // Ajustar tamaño del mapa después del renderizado para evitar problemas de mosaico
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [product]);
 
   const fetchProduct = async (productId: number) => {
     try {
@@ -235,7 +287,7 @@ export function ProductDetail() {
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div>
+          <div className="flex flex-col h-full">
             <div className="aspect-square bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 mb-4 relative group">
               {product.urlsImagenes && product.urlsImagenes.length > 0 ? (
                 <>
@@ -302,9 +354,32 @@ export function ProductDetail() {
                 Compartir
               </button>
             </div>
+
+            <Card className="mt-6 lg:mt-auto border-slate-200">
+              <CardHeader>
+                <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Información del propietario
+                </h3>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
+                    {ownerName.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-medium text-slate-900">{ownerName}</div>
+                    <div className="text-sm text-slate-500">Propietario verificado</div>
+                  </div>
+                </div>
+                <div className="text-sm text-slate-600">
+                  Miembro de MESU • Productos ortopédicos verificados
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          <div>
+          <div className="flex flex-col h-full">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -370,28 +445,28 @@ export function ProductDetail() {
               </div>
             </div>
 
-            <Card>
-              <CardHeader>
-                <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Información del propietario
-                </h3>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
-                    {ownerName.charAt(0)}
+            {product.latitud && product.longitud && (product.latitud !== 0 || product.longitud !== 0) ? (
+              <Card className="mt-6 lg:mt-auto overflow-hidden border-slate-200">
+                <CardHeader className="pb-3">
+                  <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-blue-600" />
+                    Ubicación del insumo
+                  </h3>
+                </CardHeader>
+                <CardContent className="p-0 relative">
+                  <div 
+                    ref={mapContainerRef} 
+                    className="h-64 w-full z-10"
+                  />
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 text-xs text-slate-500 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
+                    <span>{product.direccion}</span>
                   </div>
-                  <div>
-                    <div className="font-medium text-slate-900">{ownerName}</div>
-                    <div className="text-sm text-slate-500">Propietario verificado</div>
-                  </div>
-                </div>
-                <div className="text-sm text-slate-600">
-                  Miembro de MESU • Productos ortopédicos verificados
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : null}
+
+
           </div>
         </div>
 

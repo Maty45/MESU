@@ -31,24 +31,25 @@ export function OwnerDashboard() {
   const [reportClientName, setReportClientName] = useState('');
   const [reportReason, setReportReason] = useState('');
 
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [pubData, opData, rentData] = await Promise.all([
+        publicacionInsumoService.getMisPublicaciones(),
+        publicacionInsumoService.getMisOperaciones(),
+        publicacionInsumoService.getMisAlquileresActivos()
+      ]);
+      setPublicaciones(pubData);
+      setOperaciones(opData);
+      setAlquileresActivos(rentData);
+    } catch (err) {
+      console.error('Error al cargar datos en owner dashboard:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const [pubData, opData, rentData] = await Promise.all([
-          publicacionInsumoService.getMisPublicaciones(),
-          publicacionInsumoService.getMisOperaciones(),
-          publicacionInsumoService.getMisAlquileresActivos()
-        ]);
-        setPublicaciones(pubData);
-        setOperaciones(opData);
-        setAlquileresActivos(rentData);
-      } catch (err) {
-        console.error('Error al cargar datos en owner dashboard:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadData();
   }, []);
 
@@ -101,7 +102,7 @@ export function OwnerDashboard() {
     const today = new Date();
     
     if (today > dueDate) {
-      return { label: '¡Vencido!', variant: 'destructive' as const };
+      return { label: '¡Vencido!', variant: 'danger' as const };
     }
     
     const diffTime = dueDate.getTime() - today.getTime();
@@ -130,7 +131,7 @@ export function OwnerDashboard() {
     if (!confirm('¿Estás seguro de eliminar esta publicación?')) return;
     try {
       await publicacionInsumoService.delete(productId);
-      await fetchPublicaciones();
+      await loadData();
     } catch (err: any) {
       alert('Error al eliminar: ' + err.message);
     }
@@ -268,7 +269,7 @@ export function OwnerDashboard() {
                           className={
                             badgeInfo.variant === 'warning'
                               ? 'bg-amber-100 text-amber-700 border-amber-300'
-                              : badgeInfo.variant === 'destructive'
+                              : badgeInfo.variant === 'danger'
                               ? 'bg-red-100 text-red-700 border-red-300'
                               : 'bg-blue-100 text-blue-700 border-blue-300'
                           }

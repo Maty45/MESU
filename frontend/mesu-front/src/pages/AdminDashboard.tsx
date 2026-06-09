@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { mockProducts, mockOperations, mockReports, categoryLabels, operationTypeLabels, conditionLabels } from '../data/mockData';
+import { mockProducts, mockOperations, mockReports, categoryLabels } from '../data/mockData';
 import type { ProductCategory } from '../data/mockData';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
