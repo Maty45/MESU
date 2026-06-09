@@ -116,7 +116,7 @@ export function AdminDashboard() {
   };
 
   const obtenerMetricas = async (): Promise<MetricasBackendDTO> => {
-    const response = await fetch('http://localhost:8080/api/admin/metricas', {
+    const response = await fetch('http://localhost:8080/api/publicaciones/metricas', {
       headers: getAuthHeader(),
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -125,7 +125,7 @@ export function AdminDashboard() {
   };
 
   const obtenerOperacionesPorMes = async (): Promise<OperacionesMesBackendDTO> => {
-    const response = await fetch('http://localhost:8080/api/admin/meses', {
+    const response = await fetch('http://localhost:8080/api/publicaciones/meses', {
       headers: getAuthHeader(),
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -133,7 +133,7 @@ export function AdminDashboard() {
   };
 
   const obtenerProductosPorCategoria = async (): Promise<ProdCategoriaBackendDTO[]> => {
-    const response = await fetch('http://localhost:8080/api/admin/productos-categoria', {
+    const response = await fetch('http://localhost:8080/api/publicaciones/productos-categoria', {
       headers: getAuthHeader(),
     }); 
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
