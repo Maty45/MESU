@@ -11,6 +11,7 @@ import com.usuariorol.UsuarioRolRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -38,7 +39,7 @@ public class ReporteService {
 
         Reporte reporte = new Reporte();
 
-        reporte.setFechaHoraReporte(LocalDateTime.now());
+        reporte.setFechaHoraReporte(LocalDate.now());
         reporte.setTipoReporte(request.tipoReporte());
         reporte.setDetalleReporte(request.detalleReporte());
 
@@ -78,7 +79,7 @@ public class ReporteService {
 
         Reporte reporte = new Reporte();
 
-        reporte.setFechaHoraReporte(LocalDateTime.now());
+        reporte.setFechaHoraReporte(LocalDate.now());
         reporte.setTipoReporte(request.tipoReporte());
         reporte.setDetalleReporte(request.detalleReporte());
 

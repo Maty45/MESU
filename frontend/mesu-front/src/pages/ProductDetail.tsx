@@ -159,15 +159,26 @@ export function ProductDetail() {
   };
 
   const handleSendMessage = async () => {
-    if (!product) return;
-    try {
-      await publicacionInsumoService.registrarContacto(product.id);
-      alert(`Contacto registrado. Mensaje enviado al propietario. Recibirás una respuesta pronto.`);
-      setShowContactModal(false);
-      setMessage('');
-    } catch (err: any) {
-      alert('Error al registrar el contacto: ' + err.message);
+    if (!product || product.telefonoUsuario === undefined || product.telefonoUsuario === null) {
+      alert('No se pudo obtener el número de teléfono del propietario.');
+      return;
     }
+
+    const whatsappMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${product.telefonoUsuario.toString()}?text=${whatsappMessage}`; // Explicitly convert to string
+
+    window.open(whatsappUrl, '_blank');
+
+    try {
+      // Register the contact event in the backend
+      await publicacionInsumoService.registrarContacto(product.id);
+    } catch (err: any) {
+      console.error('Error al registrar el contacto en el backend:', err);
+      // Optionally, alert the user about the backend error, but don't prevent WhatsApp from opening
+    }
+
+    setShowContactModal(false);
+    setMessage('');
   };
 
   const handleRegistrarAlquilerSubmit = async (e: React.FormEvent) => {
@@ -724,7 +735,7 @@ export function ProductDetail() {
                 Cancelar
               </Button>
               <Button onClick={handleSendMessage} className="flex-1">
-                Enviar mensaje
+                Enviar mensaje por WhatsApp
               </Button>
             </div>
           </div>

@@ -477,6 +477,7 @@ public class PublicacionInsumoService {
         if(publicacion.getUsuarioPropietario() != null){
             dto.setNombreUsuario(publicacion.getUsuarioPropietario().getNombreUsuario());
             dto.setApellidoUsuario(publicacion.getUsuarioPropietario().getApellidoUsuario());
+            dto.setTelefonoUsuario(publicacion.getUsuarioPropietario().getTelefonoUsuario()); // Added this line
         }
 
         // Transformación de la lista de entidades de imagen a una lista simple de URLs de Cloudinary
