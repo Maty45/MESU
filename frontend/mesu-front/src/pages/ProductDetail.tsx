@@ -159,15 +159,26 @@ export function ProductDetail() {
   };
 
   const handleSendMessage = async () => {
-    if (!product) return;
-    try {
-      await publicacionInsumoService.registrarContacto(product.id);
-      alert(`Contacto registrado. Mensaje enviado al propietario. Recibirás una respuesta pronto.`);
-      setShowContactModal(false);
-      setMessage('');
-    } catch (err: any) {
-      alert('Error al registrar el contacto: ' + err.message);
+    if (!product || product.telefonoUsuario === undefined || product.telefonoUsuario === null) {
+      alert('No se pudo obtener el número de teléfono del propietario.');
+      return;
     }
+
+    const whatsappMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${product.telefonoUsuario.toString()}?text=${whatsappMessage}`; // Explicitly convert to string
+
+    window.open(whatsappUrl, '_blank');
+
+    try {
+      // Register the contact event in the backend
+      await publicacionInsumoService.registrarContacto(product.id);
+    } catch (err: any) {
+      console.error('Error al registrar el contacto en el backend:', err);
+      // Optionally, alert the user about the backend error, but don't prevent WhatsApp from opening
+    }
+
+    setShowContactModal(false);
+    setMessage('');
   };
 
   const handleRegistrarAlquilerSubmit = async (e: React.FormEvent) => {
@@ -243,10 +254,43 @@ export function ProductDetail() {
     setShowConfirmReportModal(false);
   };
 
-  const handleSubmitReport = () => {
-    alert('Reporte enviado. Nuestro equipo lo revisará pronto.');
-    setShowReportModal(false);
-    setReportReason('');
+ const handleSubmitReport = async () => {
+
+    if (!product) return;
+
+    if (!reportReason.trim()) {
+      alert("Debes indicar el motivo del reporte");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:8080/reportes/publicacion", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          idPublicacion: product.id,
+          tipoReporte: reportType,
+          detalleReporte: reportReason
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al crear reporte");
+      }
+
+      setReportReason('');
+      setReportType('OTRO');
+      setShowReportModal(false);
+      alert("Reporte enviado correctamente");
+
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo enviar el reporte");
+    }
   };
 
   if (loading) {
@@ -276,74 +320,6 @@ export function ProductDetail() {
     : 'Usuario MESU';
 
 
-<<<<<<< HEAD
-  const handleSendMessage = () => {
-    alert(`Mensaje enviado al propietario. Recibirás una respuesta pronto.`);
-    setShowContactModal(false);
-    setMessage('');
-  };
-
-  const handleReport = () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    setShowConfirmReportModal(true);
-  };
-
-  const handleConfirmReport = () => {
-    setShowConfirmReportModal(false);
-    setShowReportModal(true);
-  };
-
-  const handleCancelReport = () => {
-    setShowConfirmReportModal(false);
-  };
-
-  const handleSubmitReport = async () => {
-
-    if (!reportReason.trim()) {
-    alert("Debes indicar el motivo del reporte");
-    return;
-  }
-
-  try {
-
-    const token = localStorage.getItem("token");
-
-    const response = await fetch(
-      "http://localhost:8080/reportes/publicacion",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          idPublicacion: product.id,
-          tipoReporte: reportType,
-          detalleReporte: reportReason
-        })
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Error al crear reporte");
-    }
-
-    setReportReason('');
-    setReportType('OTRO');
-    setShowReportModal(false);
-
-    alert("Reporte enviado correctamente");
-
-  } catch (error) {
-    console.error(error);
-    alert("No se pudo enviar el reporte");
-  }
-};
-=======
->>>>>>> developer
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
@@ -759,7 +735,7 @@ export function ProductDetail() {
                 Cancelar
               </Button>
               <Button onClick={handleSendMessage} className="flex-1">
-                Enviar mensaje
+                Enviar mensaje por WhatsApp
               </Button>
             </div>
           </div>

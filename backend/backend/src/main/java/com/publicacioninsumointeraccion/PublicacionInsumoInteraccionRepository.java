@@ -37,4 +37,10 @@ public interface PublicacionInsumoInteraccionRepository extends JpaRepository<Pu
            "AND ai.fechaHastaRealAI IS NULL " +
            "ORDER BY ai.fechaHastaAcordadaAI ASC")
     List<PublicacionInsumoInteraccion> findActiveRentalsByOwnerEmail(@Param("email") String email);
+
+    @Query("SELECT COUNT(op) FROM PublicacionInsumoInteraccion op WHERE YEAR(op.fechaHPII) = YEAR(CURRENT_TIMESTAMP) AND MONTH(op.fechaHPII) = MONTH(CURRENT_TIMESTAMP)")
+    Long countOpMensuales();
+
+    @Query("SELECT COUNT(op) FROM PublicacionInsumoInteraccion op WHERE MONTH(op.fechaHPII) = :month AND YEAR(op.fechaHPII) = :year")
+    Long countOperationsByMonthAndYear(@Param("month") int month, @Param("year") int year);
 }

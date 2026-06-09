@@ -26,7 +26,7 @@ public class PublicacionInsumoInteraccion {
     private Long idPII;
 
     @Column(name = "fecha_hora_publicacion_insumo_interaccion", nullable = false)
-    private LocalDateTime fechaHPII;
+    private LocalDateTime fechaHPII = LocalDateTime.now();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_usuario_cliente", nullable = false)

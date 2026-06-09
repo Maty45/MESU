@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 //Anotaciones Lombok
@@ -25,8 +26,8 @@ public class Reporte {
     @Column(name = "id_reporte")
     private Long id;
 
-    @Column(name = "fecha_hora_reporte", nullable = false)
-    private LocalDateTime fechaHoraReporte;
+    @Column(name = "fecha_hora_reporte", nullable = true)
+    private LocalDate fechaHoraReporte = LocalDate.now();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_reporte", nullable = false)

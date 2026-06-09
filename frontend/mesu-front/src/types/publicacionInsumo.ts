@@ -15,6 +15,7 @@ export interface PublicacionInsumoResponse {
   nombreTipoOperacion: string;
   nombreUsuario: string;
   apellidoUsuario: string;
+  telefonoUsuario: number; // Changed from string to number
 }
 
 export interface PublicacionInsumoCreate {

@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-<<<<<<< Updated upstream
-import { mockProducts, mockOperations, mockReports, categoryLabels } from '../data/mockData';
-import type { ProductCategory } from '../data/mockData';
-=======
->>>>>>> Stashed changes
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -18,11 +13,11 @@ import {
   CheckCircle,
   BarChart3,
   ShieldCheck,
+  RefreshCcw,
   DollarSign,
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
-// --- INTERFACES DE USUARIOS (Iguales a tu backend) ---
 interface RolDTO {
   idRol: number;
   nombreRol: string;
@@ -85,10 +80,7 @@ interface PublicacionInsumoResponseDTO {
   apellidoUsuario: string;
 }
 
-<<<<<<< Updated upstream
-// Removed AuthUserWithToken interface as it's no longer needed.
-// The 'user' object from useAuth() now directly contains the token.
-=======
+// Backend DTO Interfaces
 interface MetricasBackendDTO {
   cantUser: number;
   cantOpMensual: number;
@@ -97,16 +89,25 @@ interface MetricasBackendDTO {
 }
 
 interface OperacionesMesBackendDTO {
-  ene: number; feb: number; mar: number; abr: number; may: number; jun: number;
-  jul: number; ago: number; sep: number; oct: number; nov: number; dic: number;
+  ene: number;
+  feb: number;
+  mar: number;
+  abr: number;
+  may: number;
+  jun: number;
+  jul: number;
+  ago: number;
+  sep: number;
+  oct: number;
+  nov: number;
+  dic: number;
 }
 
 interface ProdCategoriaBackendDTO {
   nombreCategoria: string;
   cantidadProductosActivos: number;
-  porcentajeActivos: number;
+  percentageActivos?: number; // Opcional por compatibilidad
 }
->>>>>>> Stashed changes
 
 export function AdminDashboard() {
   const { user } = useAuth();
@@ -121,42 +122,6 @@ export function AdminDashboard() {
   // --- ESTADOS DE PANTALLAS DE CARGA ---
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [loadingPublications, setLoadingPublications] = useState(false);
-<<<<<<< Updated upstream
-  const [errorPublications, setErrorPublications] = useState<string | null>(null);
-  const [errorUsers, setErrorUsers] = useState<string | null>(null);
-
-  if (!user || !user.roles.includes('ADMIN')) {
-    return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">Acceso denegado</h2>
-          <p className="text-slate-600 mb-6">Esta página es solo para administradores</p>
-          <Button onClick={() => navigate('/marketplace')}>Ir al Marketplace</Button>
-        </div>
-      </div>
-    );
-  }
-
-  const totalUsers = backendUsers.length;
-  const totalProducts = backendPublications.length;
-  const totalOperations = mockOperations.length;
-  const pendingReports = mockReports.filter((r) => r.status === 'pending').length;
-
-  const categoriesData = (Object.keys(categoryLabels) as ProductCategory[]).map((key) => ({
-    name: categoryLabels[key],
-    value: mockProducts.filter((p) => p.category === key).length,
-  }));
-
-  const operationsData = [
-    { name: 'Ene', operaciones: 12 },
-    { name: 'Feb', operaciones: 19 },
-    { name: 'Mar', operaciones: 25 },
-    { name: 'Abr', operaciones: 31 },
-    { name: 'May', operaciones: 28 },
-  ];
-
-  const COLORS = ['#3b82f6', '#14b8a6', '#8b5cf6', '#f59e0b', '#ef4444', '#6b7280'];
-=======
   const [loadingReports, setLoadingReports] = useState(false);
   const [loadingOverview, setLoadingOverview] = useState(false);
   
@@ -236,7 +201,6 @@ export function AdminDashboard() {
       setLoadingOverview(false);
     }
   };
->>>>>>> Stashed changes
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -247,19 +211,8 @@ export function AdminDashboard() {
         navigate('/login');
         return;
       }
-<<<<<<< Updated upstream
-      const response = await fetch('http://localhost:8080/api/usuario', {
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-=======
       const response = await fetch('http://localhost:8080/api/usuario', { headers: getAuthHeader() });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
->>>>>>> Stashed changes
       const data: UsuarioDTO[] = await response.json();
       setBackendUsers(data);
     } catch (error) {
@@ -279,19 +232,8 @@ export function AdminDashboard() {
         navigate('/login');
         return;
       }
-<<<<<<< Updated upstream
-      const response = await fetch('http://localhost:8080/api/publicaciones/obtenerPublicaciones', {
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-=======
       const response = await fetch('http://localhost:8080/api/publicaciones/obtenerPublicaciones', { headers: getAuthHeader() });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
->>>>>>> Stashed changes
       const data: PublicacionInsumoResponseDTO[] = await response.json();
       setBackendPublications(data);
     } catch (error) {
@@ -302,7 +244,6 @@ export function AdminDashboard() {
     }
   };
 
-  // Trae los reportes directamente desde la ruta de tu ReporteController
   const fetchReports = async () => {
     setLoadingReports(true);
     setErrorReportes(null);
@@ -322,11 +263,7 @@ export function AdminDashboard() {
     } finally {
       setLoadingReports(false);
     }
-<<<<<<< Updated upstream
-  }, [activeTab]);
-=======
   };
->>>>>>> Stashed changes
 
   // Controla qué datos buscar según la pestaña seleccionada
   useEffect(() => {
@@ -343,9 +280,7 @@ export function AdminDashboard() {
         if (!user?.token) { navigate('/login'); return; }
         const response = await fetch(`http://localhost:8080/api/publicaciones/delete?id=${productId}`, {
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${user.token}`, // Use the user.token directly
-          },
+          headers: getAuthHeader(),
         });
         if (!response.ok) throw new Error(`Status: ${response.status}`);
         alert(`Publicación ${productId} eliminada.`);
@@ -355,38 +290,6 @@ export function AdminDashboard() {
       }
     }
   };
-<<<<<<< Updated upstream
-
-  useEffect(() => {
-    if (activeTab === 'products') {
-      fetchPublications();
-    }
-  }, [activeTab]);
-
-  const getPublicationStatusBadge = (status: string) => {
-    switch (status.toUpperCase()) {
-      case 'ACTIVA':
-        return 'success';
-      case 'PENDIENTE':
-        return 'warning';
-      case 'ELIMINADA':
-        return 'destructive';
-      default:
-        return 'default';
-    }
-  };
-
-  const getOperationBadge = (type: string) => {
-    const variants = {
-      DONACION: 'success' as const,
-      ALQUILER: 'info' as const,
-      VENTA: 'warning' as const,
-    };
-    return variants[type.toUpperCase() as keyof typeof variants] || 'default';
-  };
-
-=======
->>>>>>> Stashed changes
 
   const handleDeleteUser = async (dni: number) => { 
     if (confirm(`¿Estás seguro de eliminar al usuario con DNI: ${dni}?`)) {
@@ -394,9 +297,7 @@ export function AdminDashboard() {
         if (!user?.token) { navigate('/login'); return; }
         const response = await fetch(`http://localhost:8080/api/usuario/delete?dni=${dni}`, {
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${user.token}`,
-          },
+          headers: getAuthHeader(),
         });
         if (!response.ok) throw new Error(`Status: ${response.status}`);
         setBackendUsers((prev) => prev.filter((u) => u.dniUsuario !== dni));
@@ -408,25 +309,12 @@ export function AdminDashboard() {
   };
 
   const handleResolveReport = (reportId: number) => {
-    // Como acordamos no cambiar el back, este botón por ahora avisa en pantalla
     console.log('Resolver reporte:', reportId);
     alert(`Reporte ${reportId} marcado localmente como atendido.`);
   };
 
-  // --- CONTROL DE ROL DE ADMINISTRADOR ---
-  if (!user || !user.roles.includes('ADMIN')) {
-    return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">Acceso denegado</h2>
-          <p className="text-slate-600 mb-6">Esta página es solo para administradores</p>
-          <Button onClick={() => navigate('/marketplace')}>Ir al Marketplace</Button>
-        </div>
-      </div>
-    );
-  }
-
   const COLORS = ['#3b82f6', '#14b8a6', '#8b5cf6', '#f59e0b', '#ef4444', '#6b7280'];
+  
   const getPublicationStatusBadge = (status: string) => {
     switch (status?.toUpperCase()) {
       case 'ACTIVA': return 'success';
@@ -444,69 +332,27 @@ export function AdminDashboard() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-<<<<<<< Updated upstream
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Panel de Administración</h1>
-          <p className="text-slate-600">Gestión completa de la plataforma MESU</p>
-=======
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 mb-2">Panel de Administración</h1>
             <p className="text-slate-600">Gestión completa de la plataforma MESU</p>
           </div>
           {activeTab === 'overview' && (
-            <Button onClick={fetchOverviewData} disabled={loadingOverview} variant="outline" size="sm" className="gap-2">
+            <Button
+              onClick={fetchOverviewData}
+              disabled={loadingOverview}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
               <RefreshCcw className={`w-4 h-4 ${loadingOverview ? 'animate-spin' : ''}`} />
               Refrescar Vista
             </Button>
           )}
->>>>>>> Stashed changes
         </div>
 
         {/* NAVEGACIÓN DE PESTAÑAS */}
         <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-<<<<<<< Updated upstream
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition ${
-              activeTab === 'overview'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            Vista General
-          </button>
-          <button
-            onClick={() => setActiveTab('products')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition ${
-              activeTab === 'products'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            Productos
-          </button>
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition ${
-              activeTab === 'users'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            Usuarios
-          </button>
-          <button
-            onClick={() => setActiveTab('reports')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition ${
-              activeTab === 'reports'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            Reportes ({pendingReports})
-          </button>
-=======
           {['overview', 'products', 'users', 'reports'].map((tab) => (
             <button
               key={tab}
@@ -518,89 +364,16 @@ export function AdminDashboard() {
               {tab === 'overview' ? 'Vista General' : tab === 'products' ? 'Productos' : tab === 'users' ? 'Usuarios' : `Reportes (${metrics.reportesPendientes})`}
             </button>
           ))}
->>>>>>> Stashed changes
         </div>
 
         {/* --- VISTA GENERAL --- */}
         {activeTab === 'overview' && (
           <>
-<<<<<<< Updated upstream
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-2xl font-bold text-slate-900">{totalUsers}</div>
-                      <div className="text-sm text-slate-600 mt-1">Usuarios totales</div>
-                    </div>
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Users className="w-6 h-6 text-blue-600" />
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center text-sm text-green-600">
-                    <TrendingUp className="w-4 h-4 mr-1" />
-                    +12% este mes
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-2xl font-bold text-slate-900">{totalProducts}</div>
-                      <div className="text-sm text-slate-600 mt-1">Productos activos</div>
-                    </div>
-                    <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
-                      <Package className="w-6 h-6 text-teal-600" />
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center text-sm text-green-600">
-                    <TrendingUp className="w-4 h-4 mr-1" />
-                    +8% este mes
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-2xl font-bold text-slate-900">{totalOperations}</div>
-                      <div className="text-sm text-slate-600 mt-1">Operaciones</div>
-                    </div>
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <DollarSign className="w-6 h-6 text-purple-600" />
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center text-sm text-green-600">
-                    <TrendingUp className="w-4 h-4 mr-1" />
-                    +15% este mes
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-2xl font-bold text-slate-900">{pendingReports}</div>
-                      <div className="text-sm text-slate-600 mt-1">Reportes pendientes</div>
-                    </div>
-                    <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <AlertTriangle className="w-6 h-6 text-amber-600" />
-                    </div>
-                  </div>
-                  <div className="mt-3 text-sm text-slate-500">Requieren atención</div>
-                </CardContent>
-              </Card>
-=======
             <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 ${loadingOverview ? 'opacity-50 pointer-events-none' : ''}`}>
               <Card><CardContent className="p-6"><div className="flex items-center justify-between"><div><div className="text-2xl font-bold text-slate-900">{metrics.usuariosTotales}</div><div className="text-sm text-slate-600 mt-1">Usuarios totales</div></div><div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center"><Users className="w-6 h-6 text-blue-600" /></div></div></CardContent></Card>
               <Card><CardContent className="p-6"><div className="flex items-center justify-between"><div><div className="text-2xl font-bold text-slate-900">{metrics.productosActivos}</div><div className="text-sm text-slate-600 mt-1">Productos activos</div></div><div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center"><Package className="w-6 h-6 text-teal-600" /></div></div></CardContent></Card>
               <Card><CardContent className="p-6"><div className="flex items-center justify-between"><div><div className="text-2xl font-bold text-slate-900">{metrics.operacionesTotales}</div><div className="text-sm text-slate-600 mt-1">Operaciones</div></div><div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center"><DollarSign className="w-6 h-6 text-purple-600" /></div></div></CardContent></Card>
               <Card><CardContent className="p-6"><div className="flex items-center justify-between"><div><div className="text-2xl font-bold text-slate-900">{metrics.reportesPendientes}</div><div className="text-sm text-slate-600 mt-1">Reportes pendientes</div></div><div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center"><AlertTriangle className="w-6 h-6 text-amber-600" /></div></div></CardContent></Card>
->>>>>>> Stashed changes
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -613,6 +386,7 @@ export function AdminDashboard() {
                       <XAxis dataKey="name" stroke="#64748b" />
                       <YAxis stroke="#64748b" />
                       <Tooltip />
+                      <Legend />
                       <Bar dataKey="operaciones" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -627,11 +401,8 @@ export function AdminDashboard() {
                       <Pie data={categoriesData} cx="50%" cy="50%" labelLine={false} label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} outerRadius={80} fill="#8884d8" dataKey="value">
                         {categoriesData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                       </Pie>
-<<<<<<< Updated upstream
                       <Tooltip />
-=======
-                      <Tooltip /><Legend />
->>>>>>> Stashed changes
+                      <Legend />
                     </PieChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -778,15 +549,12 @@ export function AdminDashboard() {
                           <div className="flex items-center gap-3 mb-2">
                             <Badge variant="warning">{report.tipoReporte}</Badge>
                             <span className="text-sm text-slate-600">
-                              {/* Formatea la propiedad fechaHoraReporte del back */}
                               {report.fechaHoraReporte ? new Date(report.fechaHoraReporte).toLocaleDateString('es-AR') : 'Sin fecha'}
                             </span>
                           </div>
                           
-                          {/* Detalle principal del reporte */}
                           <div className="font-medium text-slate-900 mb-1">{report.detalleReporte}</div>
                           
-                          {/* Muestra dinámicamente si fue un reporte de publicación o de usuario */}
                           {report.publicacionInsumoReportada && (
                             <div className="text-xs text-blue-700 font-semibold mb-1">
                               Publicación Afectada: {report.publicacionInsumoReportada.titulo} (ID: {report.publicacionInsumoReportada.id})

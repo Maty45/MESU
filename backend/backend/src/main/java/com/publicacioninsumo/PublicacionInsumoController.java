@@ -1,5 +1,9 @@
 package com.publicacioninsumo;
 
+import com.admin.AdminService;
+import com.admin.dto.MetricasDTO;
+import com.admin.dto.OperacionesMesDTO;
+import com.admin.dto.ProdCategoriaDTO;
 import com.exception.ResourceNotFoundException;
 import com.publicacioninsumo.dto.PublicacionInsumoCreateDTO;
 import com.publicacioninsumo.dto.PublicacionInsumoResponseDTO;
@@ -19,9 +23,11 @@ import java.util.List;
 public class PublicacionInsumoController {
 
     private final PublicacionInsumoService publicacionService;
+    private final AdminService adminService;
 
-    public PublicacionInsumoController(PublicacionInsumoService publicacionService) {
+    public PublicacionInsumoController(PublicacionInsumoService publicacionService, AdminService adminService) {
         this.publicacionService = publicacionService;
+        this.adminService = adminService;
     }
 
     // ==========================================
@@ -140,5 +146,31 @@ public class PublicacionInsumoController {
             return ResponseEntity.notFound().build(); // Retorna 404 Not Found
         }
     }
-}
 
+    @GetMapping("/metricas")
+    public ResponseEntity<MetricasDTO> getMetricas() {
+        try {
+            return new ResponseEntity<>(adminService.getMetricas(), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/meses")
+    public ResponseEntity<OperacionesMesDTO> getOperacionesMes() {
+        try {
+            return new ResponseEntity<>(adminService.getOperacionesMes(), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/productos-categoria")
+    public ResponseEntity<List<ProdCategoriaDTO>> getPorcentajeProductosActivosPorCategoria() {
+        try {
+            return new ResponseEntity<>(adminService.getPorcentajeProductosActivosPorCategoria(), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+}

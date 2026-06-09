@@ -42,4 +42,5 @@ public class PublicacionInsumoResponseDTO {
     //Usuario que publicó
     private String nombreUsuario;
     private String apellidoUsuario;
+    private Long telefonoUsuario; // Changed from String to Long
 }
