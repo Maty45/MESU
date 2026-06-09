@@ -45,5 +45,10 @@ public interface PublicacionInsumoRepository extends JpaRepository<PublicacionIn
             "WHERE p.usuarioPropietario.emailUsuario = :email " +
             "AND p.estadoPublicacionInsumo.nombreEPI <> 'ELIMINADA'")
     List<PublicacionInsumo> findByUsuarioPropietarioEmailUsuario(@Param("email") String email);
-}
 
+    @Query("SELECT p.tipoInsumo.nombreTI, COUNT(p) FROM PublicacionInsumo p WHERE p.estadoPublicacionInsumo.nombreEPI = 'ACTIVA' GROUP BY p.tipoInsumo.nombreTI")
+    List<Object[]> countActiveProductsByCategory();
+
+    @Query("SELECT COUNT(p) FROM PublicacionInsumo p WHERE p.estadoPublicacionInsumo.nombreEPI = 'ACTIVA'")
+    Long countAllActiveProducts();
+}

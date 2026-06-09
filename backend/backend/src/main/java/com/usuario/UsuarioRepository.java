@@ -16,4 +16,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     String deleteByDniUsuario(Long dniUsuario);
     boolean existsByEmailUsuario(String emailUsuario);
     boolean existsByDniUsuario(Long dniUsuario);
+    @Query("SELECT u FROM Usuario u WHERE u.fechaHBajaUsuario IS NULL")
+    List<Usuario> findAllActive();
 }
