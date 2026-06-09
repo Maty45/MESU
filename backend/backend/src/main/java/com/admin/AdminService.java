@@ -30,10 +30,10 @@ public class AdminService {
 
     public MetricasDTO getMetricas() {
         try{
-            Long cantuser = usuarioRepository.findAllActive().stream().count();
-            Long cantOpMensuales = interaccionRepository.countOpMensuales();
-            Long prodActivos = publicacionInsumoRepository.findByEstadoPublicacionCatalogo("ACTIVA").stream().count();
-            Long cantReportes = reporteRepository.count();
+            long cantuser = usuarioRepository.findAllActive().stream().count();
+            long cantOpMensuales = interaccionRepository.countOpMensuales() != null ? interaccionRepository.countOpMensuales() : 0L;
+            long prodActivos = publicacionInsumoRepository.findByEstadoPublicacionCatalogo("ACTIVA").stream().count();
+            long cantReportes = reporteRepository.count();
             return new MetricasDTO(cantuser, cantOpMensuales, prodActivos, cantReportes);
         } catch (Exception e) {
             throw new RuntimeException("Error al obtener métricas: " + e.getMessage(), e);
@@ -45,7 +45,8 @@ public class AdminService {
             int currentYear = Year.now().getValue();
             List<Long> monthlyCounts = new ArrayList<>();
             for (int month = 1; month <= 12; month++) {
-                monthlyCounts.add(interaccionRepository.countOperationsByMonthAndYear(month, currentYear));
+                Long count = interaccionRepository.countOperationsByMonthAndYear(month, currentYear);
+                monthlyCounts.add(count != null ? count : 0L);
             }
             return new OperacionesMesDTO(
                     monthlyCounts.get(0),  // Enero
@@ -70,11 +71,11 @@ public class AdminService {
         try {
             List<Object[]> activeProductsByCategory = publicacionInsumoRepository.countActiveProductsByCategory();
             Long totalActiveProducts = publicacionInsumoRepository.countAllActiveProducts();
-
-            if (totalActiveProducts == 0) {
+            
+            // Evitar NPE por unboxing si totalActiveProducts es null
+            if (totalActiveProducts == null || totalActiveProducts == 0) {
                 return new ArrayList<>();
             }
-
             return activeProductsByCategory.stream().map(result -> {
                 String nombreCategoria = (String) result[0];
                 Long cantidadProductosActivos = (Long) result[1];

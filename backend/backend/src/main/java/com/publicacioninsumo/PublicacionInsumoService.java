@@ -453,7 +453,11 @@ public class PublicacionInsumoService {
                 dto.setUnidadTiempo(null);
             } else {
                 dto.setMonto(publicacion.getCondicionOperacion().getMontoCondicionOperacion());
-                dto.setUnidadTiempo(publicacion.getCondicionOperacion().getUnidadTiempoCO().toString());
+                if (publicacion.getCondicionOperacion().getUnidadTiempoCO() != null) {
+                    dto.setUnidadTiempo(publicacion.getCondicionOperacion().getUnidadTiempoCO().toString());
+                } else {
+                    dto.setUnidadTiempo(null);
+                }
             }
         }
 
