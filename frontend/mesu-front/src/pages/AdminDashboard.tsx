@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { mockProducts, mockOperations, mockReports, categoryLabels } from '../data/mockData';
-import type { ProductCategory } from '../data/mockData';
+import { mockReports } from '../data/mockData';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -16,9 +15,10 @@ import {
   CheckCircle,
   BarChart3,
   ShieldCheck,
+  RefreshCcw,
   DollarSign,
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 // Define the DTO types based on backend structure
 interface RolDTO {
@@ -60,8 +60,34 @@ interface PublicacionInsumoResponseDTO {
   // urlsImagenes: string[]; // Excluded as per user request
 }
 
-// Removed AuthUserWithToken interface as it's no longer needed.
-// The 'user' object from useAuth() now directly contains the token.
+// Backend DTO Interfaces
+interface MetricasBackendDTO {
+  cantUser: number;
+  cantOpMensual: number;
+  prodActivos: number;
+  cantReportes: number;
+}
+
+interface OperacionesMesBackendDTO {
+  ene: number;
+  feb: number;
+  mar: number;
+  abr: number;
+  may: number;
+  jun: number;
+  jul: number;
+  ago: number;
+  sep: number;
+  oct: number;
+  nov: number;
+  dic: number;
+}
+
+interface ProdCategoriaBackendDTO {
+  nombreCategoria: string;
+  cantidadProductosActivos: number;
+  porcentajeActivos: number;
+}
 
 export function AdminDashboard() {
   const { user } = useAuth();
@@ -71,8 +97,92 @@ export function AdminDashboard() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [backendPublications, setBackendPublications] = useState<PublicacionInsumoResponseDTO[]>([]);
   const [loadingPublications, setLoadingPublications] = useState(false);
+  const [metrics, setMetrics] = useState({ 
+    usuariosTotales: 0, 
+    productosActivos: 0, 
+    operacionesTotales: 0, 
+    reportesPendientes: 0,
+    // Tendencia fields removed as they are not provided by the backend DTO
+  });
+  const [operationsData, setOperationsData] = useState<any[]>([]);
+  const [categoriesData, setCategoriesData] = useState<any[]>([]);
+  const [loadingOverview, setLoadingOverview] = useState(false);
   const [errorPublications, setErrorPublications] = useState<string | null>(null);
   const [errorUsers, setErrorUsers] = useState<string | null>(null);
+
+  const getAuthHeader = () => {
+    const token = user?.token?.replace(/['"]+/g, '').trim(); // Elimina comillas si existen
+    return { 'Authorization': `Bearer ${token}` };
+  };
+
+  const obtenerMetricas = async (): Promise<MetricasBackendDTO> => {
+    const response = await fetch('http://localhost:8080/api/publicaciones/metricas', {
+      headers: getAuthHeader(),
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    console.log("Métricas obtenidas del backend:", response);
+    return await response.json();
+  };
+
+  const obtenerOperacionesPorMes = async (): Promise<OperacionesMesBackendDTO> => {
+    const response = await fetch('http://localhost:8080/api/publicaciones/meses', {
+      headers: getAuthHeader(),
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  };
+
+  const obtenerProductosPorCategoria = async (): Promise<ProdCategoriaBackendDTO[]> => {
+    const response = await fetch('http://localhost:8080/api/publicaciones/productos-categoria', {
+      headers: getAuthHeader(),
+    }); 
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  };
+
+  const fetchOverviewData = async () => {
+    if (!user?.token) return;
+    setLoadingOverview(true);
+    try {
+      const [m, o, c] = await Promise.all([
+        obtenerMetricas(),
+        obtenerOperacionesPorMes(),
+        obtenerProductosPorCategoria()
+      ]);
+      
+      setMetrics({
+        usuariosTotales: m.cantUser || 0,
+        productosActivos: m.prodActivos || 0,
+        operacionesTotales: m.cantOpMensual || 0,
+        reportesPendientes: m.cantReportes || 0,
+      });
+      
+      const monthKeys = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+      const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const operationsArray = monthKeys.map((key, index) => ({
+        name: monthNames[index],
+        operaciones: (o as any)[key] || 0
+      }));
+
+      setOperationsData(operationsArray);
+
+      setCategoriesData((c || []).map((item: ProdCategoriaBackendDTO) => ({
+        name: item.nombreCategoria,
+        value: item.cantidadProductosActivos
+      })));
+      
+    } catch (error) {
+      console.error("Error loading overview data:", error);
+    } finally {
+      setLoadingOverview(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'overview') {
+      fetchOverviewData();
+    }
+  }, [activeTab, user?.token]); // Se añadió user?.token a las dependencias
 
   if (!user || !user.roles.includes('ADMIN')) {
     return (
@@ -85,24 +195,6 @@ export function AdminDashboard() {
       </div>
     );
   }
-
-  const totalUsers = backendUsers.length;
-  const totalProducts = backendPublications.length;
-  const totalOperations = mockOperations.length;
-  const pendingReports = mockReports.filter((r) => r.status === 'pending').length;
-
-  const categoriesData = (Object.keys(categoryLabels) as ProductCategory[]).map((key) => ({
-    name: categoryLabels[key],
-    value: mockProducts.filter((p) => p.category === key).length,
-  }));
-
-  const operationsData = [
-    { name: 'Ene', operaciones: 12 },
-    { name: 'Feb', operaciones: 19 },
-    { name: 'Mar', operaciones: 25 },
-    { name: 'Abr', operaciones: 31 },
-    { name: 'May', operaciones: 28 },
-  ];
 
   const COLORS = ['#3b82f6', '#14b8a6', '#8b5cf6', '#f59e0b', '#ef4444', '#6b7280'];
 
@@ -117,9 +209,7 @@ export function AdminDashboard() {
         return;
       }
       const response = await fetch('http://localhost:8080/api/usuario', {
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-        },
+        headers: getAuthHeader(),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -145,9 +235,7 @@ export function AdminDashboard() {
         return;
       }
       const response = await fetch('http://localhost:8080/api/publicaciones/obtenerPublicaciones', {
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-        },
+        headers: getAuthHeader(),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -167,7 +255,7 @@ export function AdminDashboard() {
     if (activeTab === 'users') {
       fetchUsers();
     }
-  }, [activeTab]);
+  }, [activeTab, user?.token]); // Se añadió user?.token a las dependencias
 
   const handleDeleteProduct = async (productId: number) => {
     if (confirm(`¿Estás seguro de eliminar la publicación con ID: ${productId}?`)) {
@@ -182,9 +270,7 @@ export function AdminDashboard() {
 
         const response = await fetch(`http://localhost:8080/api/publicaciones/delete?id=${productId}`, {
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${user.token}`, // Use the user.token directly
-          },
+          headers: getAuthHeader(),
         });
         if (!response.ok) {
           // Handle specific HTTP error codes from backend
@@ -207,12 +293,13 @@ export function AdminDashboard() {
       }
     }
   };
+  
 
   useEffect(() => {
     if (activeTab === 'products') {
       fetchPublications();
     }
-  }, [activeTab]);
+  }, [activeTab, user?.token]); // Se añadió user?.token a las dependencias
 
   const getPublicationStatusBadge = (status: string) => {
     switch (status.toUpperCase()) {
@@ -248,9 +335,7 @@ export function AdminDashboard() {
         }
         const response = await fetch(`http://localhost:8080/api/usuario/delete?dni=${dni}`, {
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${user.token}`,
-          },
+          headers: getAuthHeader(),
         });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -274,9 +359,23 @@ export function AdminDashboard() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Panel de Administración</h1>
-          <p className="text-slate-600">Gestión completa de la plataforma MESU</p>
+        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Panel de Administración</h1>
+            <p className="text-slate-600">Gestión completa de la plataforma MESU</p>
+          </div>
+          {activeTab === 'overview' && (
+            <Button
+              onClick={fetchOverviewData}
+              disabled={loadingOverview}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <RefreshCcw className={`w-4 h-4 ${loadingOverview ? 'animate-spin' : ''}`} />
+              Refrescar Vista
+            </Button>
+          )}
         </div>
 
         <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
@@ -318,28 +417,25 @@ export function AdminDashboard() {
                 : 'bg-white text-slate-700 hover:bg-slate-50'
             }`}
           >
-            Reportes ({pendingReports})
+            Reportes ({metrics.reportesPendientes})
           </button>
         </div>
 
         {activeTab === 'overview' && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 ${loadingOverview ? 'opacity-50 pointer-events-none' : ''}`}>
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-2xl font-bold text-slate-900">{totalUsers}</div>
+                      <div className="text-2xl font-bold text-slate-900">{metrics.usuariosTotales}</div>
                       <div className="text-sm text-slate-600 mt-1">Usuarios totales</div>
                     </div>
                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                       <Users className="w-6 h-6 text-blue-600" />
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center text-sm text-green-600">
-                    <TrendingUp className="w-4 h-4 mr-1" />
-                    +12% este mes
-                  </div>
+                  {/* Tendencia de usuarios eliminada */}
                 </CardContent>
               </Card>
 
@@ -347,17 +443,14 @@ export function AdminDashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-2xl font-bold text-slate-900">{totalProducts}</div>
+                      <div className="text-2xl font-bold text-slate-900">{metrics.productosActivos}</div>
                       <div className="text-sm text-slate-600 mt-1">Productos activos</div>
                     </div>
                     <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
                       <Package className="w-6 h-6 text-teal-600" />
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center text-sm text-green-600">
-                    <TrendingUp className="w-4 h-4 mr-1" />
-                    +8% este mes
-                  </div>
+                  {/* Tendencia de productos eliminada */}
                 </CardContent>
               </Card>
 
@@ -365,17 +458,14 @@ export function AdminDashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-2xl font-bold text-slate-900">{totalOperations}</div>
+                      <div className="text-2xl font-bold text-slate-900">{metrics.operacionesTotales}</div>
                       <div className="text-sm text-slate-600 mt-1">Operaciones</div>
                     </div>
                     <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                       <DollarSign className="w-6 h-6 text-purple-600" />
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center text-sm text-green-600">
-                    <TrendingUp className="w-4 h-4 mr-1" />
-                    +15% este mes
-                  </div>
+                  {/* Tendencia de operaciones eliminada */}
                 </CardContent>
               </Card>
 
@@ -383,7 +473,7 @@ export function AdminDashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-2xl font-bold text-slate-900">{pendingReports}</div>
+                      <div className="text-2xl font-bold text-slate-900">{metrics.reportesPendientes}</div>
                       <div className="text-sm text-slate-600 mt-1">Reportes pendientes</div>
                     </div>
                     <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
@@ -410,6 +500,7 @@ export function AdminDashboard() {
                       <XAxis dataKey="name" stroke="#64748b" />
                       <YAxis stroke="#64748b" />
                       <Tooltip />
+                      <Legend />
                       <Bar dataKey="operaciones" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -441,6 +532,7 @@ export function AdminDashboard() {
                         ))}
                       </Pie>
                       <Tooltip />
+                      <Legend />
                     </PieChart>
                   </ResponsiveContainer>
                 </CardContent>
