@@ -243,10 +243,43 @@ export function ProductDetail() {
     setShowConfirmReportModal(false);
   };
 
-  const handleSubmitReport = () => {
-    alert('Reporte enviado. Nuestro equipo lo revisará pronto.');
-    setShowReportModal(false);
-    setReportReason('');
+ const handleSubmitReport = async () => {
+
+    if (!product) return;
+
+    if (!reportReason.trim()) {
+      alert("Debes indicar el motivo del reporte");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:8080/reportes/publicacion", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          idPublicacion: product.id,
+          tipoReporte: reportType,
+          detalleReporte: reportReason
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al crear reporte");
+      }
+
+      setReportReason('');
+      setReportType('OTRO');
+      setShowReportModal(false);
+      alert("Reporte enviado correctamente");
+
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo enviar el reporte");
+    }
   };
 
   if (loading) {
@@ -276,74 +309,6 @@ export function ProductDetail() {
     : 'Usuario MESU';
 
 
-<<<<<<< HEAD
-  const handleSendMessage = () => {
-    alert(`Mensaje enviado al propietario. Recibirás una respuesta pronto.`);
-    setShowContactModal(false);
-    setMessage('');
-  };
-
-  const handleReport = () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    setShowConfirmReportModal(true);
-  };
-
-  const handleConfirmReport = () => {
-    setShowConfirmReportModal(false);
-    setShowReportModal(true);
-  };
-
-  const handleCancelReport = () => {
-    setShowConfirmReportModal(false);
-  };
-
-  const handleSubmitReport = async () => {
-
-    if (!reportReason.trim()) {
-    alert("Debes indicar el motivo del reporte");
-    return;
-  }
-
-  try {
-
-    const token = localStorage.getItem("token");
-
-    const response = await fetch(
-      "http://localhost:8080/reportes/publicacion",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          idPublicacion: product.id,
-          tipoReporte: reportType,
-          detalleReporte: reportReason
-        })
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Error al crear reporte");
-    }
-
-    setReportReason('');
-    setReportType('OTRO');
-    setShowReportModal(false);
-
-    alert("Reporte enviado correctamente");
-
-  } catch (error) {
-    console.error(error);
-    alert("No se pudo enviar el reporte");
-  }
-};
-=======
->>>>>>> developer
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">

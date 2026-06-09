@@ -17,6 +17,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { publicacionInsumoService } from '../services/publicacionInsumoService';
 import type { PublicacionInsumoResponse } from '../types/publicacionInsumo';
 
@@ -27,6 +28,8 @@ export function OwnerDashboard() {
   const [operaciones, setOperaciones] = useState<any[]>([]);
   const [alquileresActivos, setAlquileresActivos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reportClientId, setReportClientId] = useState<number | null>(null);
+  const [reportType, setReportType] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportClientName, setReportClientName] = useState('');
   const [reportReason, setReportReason] = useState('');
@@ -154,17 +157,73 @@ export function OwnerDashboard() {
     return status;
   };
 
-  const handleReportClient = (clientName: string) => {
+  const handleReportClient = (
+    clientId: number,
+    clientName: string
+  ) => {
+    setReportClientId(clientId);
     setReportClientName(clientName);
     setShowReportModal(true);
   };
 
-  const handleSubmitReport = () => {
-    alert('Reporte de cliente enviado. Nuestro equipo lo revisará pronto.');
+  const handleSubmitReport = async () => {
+  try {
+    if (!reportClientId) {
+      toast.error('No se encontró el usuario a reportar');
+      return;
+    }
+
+    if (!reportReason.trim()) {
+      toast.error('Debes ingresar un motivo');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      toast.error('No se encontró la sesión');
+      return;
+    }
+
+    const response = await fetch(
+      'http://localhost:8080/reportes/usuario',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          idUsuarioReportado: reportClientId,
+          tipoReporte: 'OTRO',
+          detalleReporte: reportReason,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Error al enviar reporte');
+    }
+
+    toast.success('Reporte enviado correctamente');
+
     setShowReportModal(false);
     setReportReason('');
     setReportClientName('');
-  };
+    setReportClientId(null);
+
+  } catch (error) {
+    console.error('Error reportando usuario:', error);
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : 'Error al enviar reporte'
+    );
+  }
+
+};
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
@@ -327,9 +386,14 @@ export function OwnerDashboard() {
                         {operation.montoOperacion ? `$${operation.montoOperacion.toLocaleString()}` : 'Gratis'}
                       </div>
                       <button
-                        onClick={() => handleReportClient(`${operation.nombreUsuarioCliente} ${operation.apellidoUsuarioCliente}`)}
-                        className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                        title="Reportar cliente"
+                         onClick={() =>
+                            handleReportClient(
+                              operation.idUsuarioCliente,
+                              `${operation.nombreUsuarioCliente} ${operation.apellidoUsuarioCliente}`
+                            )
+                          }
+                            className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Reportar cliente"
                       >
                         <AlertTriangle className="w-5 h-5" />
                       </button>
@@ -419,6 +483,26 @@ export function OwnerDashboard() {
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Reportar Cliente</h2>
             <p className="text-slate-600 mb-4">{reportClientName}</p>
             <div className="mb-4">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Tipo de reporte
+                </label>
+
+                <select
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value)}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg"
+                >
+                <option value="">Seleccione...</option>
+
+                <option value="FRAUDE">Fraude</option>
+                <option value="SPAM">Spam</option>
+                <option value="CONTENIDO_INAPROPIADO">
+                   Comportamiento inapropiado
+                </option>
+                <option value="OTRO">Otro</option>
+                </select>
+            </div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Razón del reporte
               </label>
