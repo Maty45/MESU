@@ -30,7 +30,9 @@ export function ProductDetail() {
   const [message, setMessage] = useState('');
   const [showConfirmReportModal, setShowConfirmReportModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [reportType, setReportType] = useState('OTRO');
   const [reportReason, setReportReason] = useState('');
+  
 
   useEffect(() => {
     if (id) {
@@ -109,11 +111,48 @@ export function ProductDetail() {
     setShowConfirmReportModal(false);
   };
 
-  const handleSubmitReport = () => {
-    alert('Reporte enviado. Nuestro equipo lo revisará pronto.');
-    setShowReportModal(false);
+  const handleSubmitReport = async () => {
+
+    if (!reportReason.trim()) {
+    alert("Debes indicar el motivo del reporte");
+    return;
+  }
+
+  try {
+
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(
+      "http://localhost:8080/reportes/publicacion",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          idPublicacion: product.id,
+          tipoReporte: reportType,
+          detalleReporte: reportReason
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Error al crear reporte");
+    }
+
     setReportReason('');
-  };
+    setReportType('OTRO');
+    setShowReportModal(false);
+
+    alert("Reporte enviado correctamente");
+
+  } catch (error) {
+    console.error(error);
+    alert("No se pudo enviar el reporte");
+  }
+};
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50">
@@ -301,6 +340,24 @@ export function ProductDetail() {
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Reportar Publicación</h2>
             <p className="text-slate-600 mb-4">{product.titulo}</p>
             <div className="mb-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Tipo de reporte
+                </label>
+
+                <select
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                      >
+                  <option value="FRAUDE">Fraude</option>
+                  <option value="SPAM">Spam</option>
+                  <option value="CONTENIDO_INAPROPIADO">
+                  Contenido inapropiado
+                  </option>
+                  <option value="OTRO">Otro</option>
+                  </select>
+              </div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Ingrese aquí la razón de su reporte
               </label>
