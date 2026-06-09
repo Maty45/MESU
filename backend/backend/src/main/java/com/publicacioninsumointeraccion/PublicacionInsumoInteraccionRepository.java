@@ -16,4 +16,25 @@ public interface PublicacionInsumoInteraccionRepository extends JpaRepository<Pu
            "WHERE pii.publicacionInsumo.idPI = :idPublicacion " +
            "ORDER BY pii.fechaHPII DESC")
     List<PublicacionInsumoInteraccion> findByPublicacionInsumoId(@Param("idPublicacion") Long idPublicacion);
+
+    @Query("SELECT pii FROM PublicacionInsumoInteraccion pii " +
+           "JOIN FETCH pii.tipoInteraccion ti " +
+           "JOIN FETCH pii.usuarioCliente uc " +
+           "JOIN FETCH pii.publicacionInsumo pi " +
+           "LEFT JOIN FETCH pii.alquilerInsumo ai " +
+           "WHERE pi.usuarioPropietario.emailUsuario = :email " +
+           "AND ti.nombreTipoInteraccion IN ('VENTA', 'DONACION', 'ALQUILER') " +
+           "ORDER BY pii.fechaHPII DESC")
+    List<PublicacionInsumoInteraccion> findConcretedOperationsByOwnerEmail(@Param("email") String email);
+
+    @Query("SELECT pii FROM PublicacionInsumoInteraccion pii " +
+           "JOIN FETCH pii.tipoInteraccion ti " +
+           "JOIN FETCH pii.usuarioCliente uc " +
+           "JOIN FETCH pii.publicacionInsumo pi " +
+           "JOIN FETCH pii.alquilerInsumo ai " +
+           "WHERE pi.usuarioPropietario.emailUsuario = :email " +
+           "AND ti.nombreTipoInteraccion = 'ALQUILER' " +
+           "AND ai.fechaHastaRealAI IS NULL " +
+           "ORDER BY ai.fechaHastaAcordadaAI ASC")
+    List<PublicacionInsumoInteraccion> findActiveRentalsByOwnerEmail(@Param("email") String email);
 }

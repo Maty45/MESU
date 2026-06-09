@@ -25,4 +25,9 @@ public class PublicacionInsumoInteraccionResponseDTO {
     private LocalDate fechaHastaAcordadaAI;
     private LocalDate fechaHastaRealAI;
     private Integer montoAcordadoAI;
+
+    // Detalles de la Publicación y Operación
+    private Long idPublicacion;
+    private String tituloPublicacion;
+    private Integer montoOperacion;
 }

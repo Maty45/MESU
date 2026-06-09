@@ -130,7 +130,7 @@ public class PublicacionInsumoController {
         PublicacionInsumoResponseDTO response = publicacionService.registrarDevolucion(id, requestDTO, emailUsuarioLogueado);
         return ResponseEntity.ok(response);
     }
-}
+
     @DeleteMapping("/delete")
     public ResponseEntity<String> eliminarPublicacionAdmin(@RequestParam("id") Long id) {
         try {
@@ -140,4 +140,5 @@ public class PublicacionInsumoController {
             return ResponseEntity.notFound().build(); // Retorna 404 Not Found
         }
     }
+}
 

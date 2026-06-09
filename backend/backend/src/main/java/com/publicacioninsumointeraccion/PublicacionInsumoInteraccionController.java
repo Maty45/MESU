@@ -42,6 +42,24 @@ public class PublicacionInsumoInteraccionController {
         return ResponseEntity.ok(response);
     }
 
+    // GET: Obtener todas las operaciones concretadas del propietario logueado
+    @GetMapping("/mis-operaciones")
+    public ResponseEntity<List<PublicacionInsumoInteraccionResponseDTO>> obtenerMisOperaciones(
+            Authentication authentication) {
+        String emailUsuarioLogueado = authentication.getName();
+        List<PublicacionInsumoInteraccionResponseDTO> operaciones = interaccionService.obtenerMisOperacionesConcretadas(emailUsuarioLogueado);
+        return ResponseEntity.ok(operaciones);
+    }
+
+    // GET: Obtener todos los alquileres activos del propietario logueado (warnings/alertas)
+    @GetMapping("/mis-alquileres-activos")
+    public ResponseEntity<List<PublicacionInsumoInteraccionResponseDTO>> obtenerMisAlquileresActivos(
+            Authentication authentication) {
+        String emailUsuarioLogueado = authentication.getName();
+        List<PublicacionInsumoInteraccionResponseDTO> alquileres = interaccionService.obtenerMisAlquileresActivos(emailUsuarioLogueado);
+        return ResponseEntity.ok(alquileres);
+    }
+
     // POST: Concretar una interacción de tipo CONTACTO a VENTA, DONACIÓN o ALQUILER
     @PostMapping("/{idInteraccion}/concretar")
     public ResponseEntity<PublicacionInsumoInteraccionResponseDTO> concretarContacto(

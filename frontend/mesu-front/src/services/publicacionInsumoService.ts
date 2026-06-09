@@ -79,5 +79,15 @@ export const publicacionInsumoService = {
       method: 'POST',
     });
     return response.json();
+  },
+
+  getMisOperaciones: async (): Promise<any[]> => {
+    const response = await fetchApi('/api/interacciones/mis-operaciones');
+    return response.json();
+  },
+
+  getMisAlquileresActivos: async (): Promise<any[]> => {
+    const response = await fetchApi('/api/interacciones/mis-alquileres-activos');
+    return response.json();
   }
 };

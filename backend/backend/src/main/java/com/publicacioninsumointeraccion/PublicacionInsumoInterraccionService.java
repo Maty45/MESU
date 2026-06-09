@@ -13,6 +13,7 @@ import com.tipointeraccion.TipoInteraccion;
 import com.tipointeraccion.TipoInteraccionRepository;
 import com.usuario.Usuario;
 import com.usuario.UsuarioRepository;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,6 +64,7 @@ public class PublicacionInsumoInterraccionService {
     }
 
     // Concretar un contacto (tipo CONTACTO) creando una NUEVA interacción (VENTA, DONACION o ALQUILER) con el mismo cliente
+    @CacheEvict(value = "catalogoActivo", allEntries = true)
     @Transactional
     public PublicacionInsumoInteraccionResponseDTO concretarContacto(Long idInteraccion, ConcretarInteraccionRequestDTO requestDTO, String emailUsuarioLogueado) throws AccessDeniedException {
         PublicacionInsumoInteraccion contactoOriginal = interaccionRepository.findById(idInteraccion)
@@ -163,6 +165,22 @@ public class PublicacionInsumoInterraccionService {
         return convertToDTO(guardada);
     }
 
+    @Transactional(readOnly = true)
+    public List<PublicacionInsumoInteraccionResponseDTO> obtenerMisOperacionesConcretadas(String emailUsuarioLogueado) {
+        List<PublicacionInsumoInteraccion> interacciones = interaccionRepository.findConcretedOperationsByOwnerEmail(emailUsuarioLogueado);
+        return interacciones.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicacionInsumoInteraccionResponseDTO> obtenerMisAlquileresActivos(String emailUsuarioLogueado) {
+        List<PublicacionInsumoInteraccion> interacciones = interaccionRepository.findActiveRentalsByOwnerEmail(emailUsuarioLogueado);
+        return interacciones.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
     private PublicacionInsumoInteraccionResponseDTO convertToDTO(PublicacionInsumoInteraccion interaccion) {
         PublicacionInsumoInteraccionResponseDTO dto = new PublicacionInsumoInteraccionResponseDTO();
         dto.setIdPII(interaccion.getIdPII());
@@ -186,6 +204,20 @@ public class PublicacionInsumoInterraccionService {
             dto.setFechaHastaAcordadaAI(interaccion.getAlquilerInsumo().getFechaHastaAcordadaAI());
             dto.setFechaHastaRealAI(interaccion.getAlquilerInsumo().getFechaHastaRealAI());
             dto.setMontoAcordadoAI(interaccion.getAlquilerInsumo().getMontoAcordadoAI());
+        }
+
+        if (interaccion.getPublicacionInsumo() != null) {
+            dto.setIdPublicacion(interaccion.getPublicacionInsumo().getIdPI());
+            dto.setTituloPublicacion(interaccion.getPublicacionInsumo().getTituloPI());
+            
+            String tipo = interaccion.getTipoInteraccion() != null ? interaccion.getTipoInteraccion().getNombreTipoInteraccion().toUpperCase() : "";
+            if (tipo.equals("ALQUILER") && interaccion.getAlquilerInsumo() != null) {
+                dto.setMontoOperacion(interaccion.getAlquilerInsumo().getMontoAcordadoAI());
+            } else if (tipo.equals("VENTA") && interaccion.getPublicacionInsumo().getCondicionOperacion() != null) {
+                dto.setMontoOperacion(interaccion.getPublicacionInsumo().getCondicionOperacion().getMontoCondicionOperacion());
+            } else {
+                dto.setMontoOperacion(0);
+            }
         }
         
         return dto;

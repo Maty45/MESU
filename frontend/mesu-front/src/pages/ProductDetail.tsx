@@ -16,6 +16,8 @@ import {
   ArrowLeft,
   Heart,
   Share2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export function ProductDetail() {
@@ -25,6 +27,7 @@ export function ProductDetail() {
   const [product, setProduct] = useState<PublicacionInsumoResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const [showContactModal, setShowContactModal] = useState(false);
   const [message, setMessage] = useState('');
@@ -233,19 +236,61 @@ export function ProductDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
-            <div className="aspect-square bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 mb-4">
+            <div className="aspect-square bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 mb-4 relative group">
               {product.urlsImagenes && product.urlsImagenes.length > 0 ? (
-                <img
-                  src={product.urlsImagenes[0]}
-                  alt={product.titulo}
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  <img
+                    src={product.urlsImagenes[activeImageIndex]}
+                    alt={product.titulo}
+                    className="w-full h-full object-cover transition-all duration-300"
+                  />
+                  {product.urlsImagenes.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setActiveImageIndex((prev) => (prev === 0 ? product.urlsImagenes.length - 1 : prev - 1))}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-slate-800 flex items-center justify-center shadow-md transition opacity-0 group-hover:opacity-100 duration-200"
+                        title="Imagen anterior"
+                      >
+                        <ChevronLeft className="w-6 h-6" />
+                      </button>
+                      <button
+                        onClick={() => setActiveImageIndex((prev) => (prev === product.urlsImagenes.length - 1 ? 0 : prev + 1))}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-slate-800 flex items-center justify-center shadow-md transition opacity-0 group-hover:opacity-100 duration-200"
+                        title="Siguiente imagen"
+                      >
+                        <ChevronRight className="w-6 h-6" />
+                      </button>
+                      
+                      {/* Mini indicador de posición */}
+                      <div className="absolute bottom-3 right-3 bg-black/60 text-white px-2 py-0.5 rounded-full text-xs font-medium">
+                        {activeImageIndex + 1} / {product.urlsImagenes.length}
+                      </div>
+                    </>
+                  )}
+                </>
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-slate-400">
                   Sin Imagen
                 </div>
               )}
             </div>
+
+            {/* Carrusel Miniaturas */}
+            {product.urlsImagenes && product.urlsImagenes.length > 1 && (
+              <div className="flex gap-2 mb-4 overflow-x-auto pb-1 max-w-full">
+                {product.urlsImagenes.map((url, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
+                      idx === activeImageIndex ? 'border-blue-500 shadow-sm' : 'border-slate-200 hover:border-slate-400'
+                    }`}
+                  >
+                    <img src={url} alt={`Vista previa ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="flex gap-3">
               <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium text-slate-700">

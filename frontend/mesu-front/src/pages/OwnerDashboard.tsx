@@ -1,6 +1,6 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { mockOperations, operationTypeLabels } from '../data/mockData';
+// mockOperations removed
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -24,26 +24,33 @@ export function OwnerDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [publicaciones, setPublicaciones] = useState<PublicacionInsumoResponse[]>([]);
+  const [operaciones, setOperaciones] = useState<any[]>([]);
+  const [alquileresActivos, setAlquileresActivos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportClientName, setReportClientName] = useState('');
   const [reportReason, setReportReason] = useState('');
 
   useEffect(() => {
-    fetchPublicaciones();
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [pubData, opData, rentData] = await Promise.all([
+          publicacionInsumoService.getMisPublicaciones(),
+          publicacionInsumoService.getMisOperaciones(),
+          publicacionInsumoService.getMisAlquileresActivos()
+        ]);
+        setPublicaciones(pubData);
+        setOperaciones(opData);
+        setAlquileresActivos(rentData);
+      } catch (err) {
+        console.error('Error al cargar datos en owner dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
-
-  const fetchPublicaciones = async () => {
-    try {
-      setLoading(true);
-      const data = await publicacionInsumoService.getMisPublicaciones();
-      setPublicaciones(data);
-    } catch (err) {
-      console.error('Error al cargar publicaciones en owner dashboard:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (!user || !user.roles.includes('PROPIETARIO')) {
     return (
@@ -72,12 +79,52 @@ export function OwnerDashboard() {
   }
 
   const userProducts = publicaciones;
-  const userOperations = mockOperations.filter((op) => op.ownerId === 'owner1');
-
   const availableProducts = userProducts.filter((p) => p.nombreEstadoPublicacion.toUpperCase() === 'ACTIVA').length;
-  const totalRevenue = userOperations
-    .filter((op) => op.status === 'completed')
-    .reduce((sum, op) => sum + (op.amount || 0), 0);
+
+  const totalRevenue = operaciones
+    .filter((op) => {
+      const type = op.nombreTipoInteraccion?.toUpperCase();
+      return type === 'VENTA' || type === 'ALQUILER';
+    })
+    .reduce((sum, op) => sum + (op.montoOperacion || 0), 0);
+
+  const getRentalBadge = (dueDateStr: string) => {
+    if (!dueDateStr) return { label: 'En curso', variant: 'info' as const };
+    const parts = dueDateStr.split('-');
+    let dueDate: Date;
+    if (parts.length === 3) {
+      dueDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 23, 59, 59);
+    } else {
+      dueDate = new Date(dueDateStr);
+      dueDate.setHours(23, 59, 59, 999);
+    }
+    const today = new Date();
+    
+    if (today > dueDate) {
+      return { label: '¡Vencido!', variant: 'destructive' as const };
+    }
+    
+    const diffTime = dueDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 3) {
+      return { label: '¡Por vencer!', variant: 'warning' as const };
+    }
+    
+    return { label: 'En curso', variant: 'info' as const };
+  };
+
+  const formatDateString = (dateStr: string) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('T')) {
+      return new Date(dateStr).toLocaleDateString('es-AR');
+    }
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return new Date(dateStr).toLocaleDateString('es-AR');
+  };
 
   const handleDeleteProduct = async (productId: number) => {
     if (!confirm('¿Estás seguro de eliminar esta publicación?')) return;
@@ -167,7 +214,7 @@ export function OwnerDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-2xl font-bold text-slate-900">{userOperations.length}</div>
+                  <div className="text-2xl font-bold text-slate-900">{operaciones.length}</div>
                   <div className="text-sm text-slate-600 mt-1">Operaciones</div>
                 </div>
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -192,71 +239,94 @@ export function OwnerDashboard() {
           </Card>
         </div>
 
-        <Card className="mb-8">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-amber-600" />
-              <h2 className="text-xl font-semibold text-slate-900">Avisos sobre alquileres</h2>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-lg gap-3">
-                <div className="flex-1">
-                  <div className="font-medium text-slate-900">Silla de ruedas plegable de aluminio</div>
-                  <div className="text-sm text-slate-600 mt-1">
-                    Cliente: Juan Pérez • Vence el 28/05/2026
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge variant="warning" className="bg-amber-100 text-amber-700 border-amber-300">
-                    ¡Por vencer!
-                  </Badge>
-                </div>
+        {alquileresActivos.length > 0 && (
+          <Card className="mb-8 border border-amber-200">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+                <h2 className="text-xl font-semibold text-slate-900">Avisos sobre alquileres</h2>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {alquileresActivos.map((rent) => {
+                  const badgeInfo = getRentalBadge(rent.fechaHastaAcordadaAI);
+                  return (
+                    <div
+                      key={rent.idPII}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-amber-50/50 border border-amber-200 rounded-lg gap-3"
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium text-slate-900">{rent.tituloPublicacion}</div>
+                        <div className="text-sm text-slate-600 mt-1">
+                          Cliente: {rent.nombreUsuarioCliente} {rent.apellidoUsuarioCliente} • Vence el {formatDateString(rent.fechaHastaAcordadaAI)}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge
+                          variant={badgeInfo.variant}
+                          className={
+                            badgeInfo.variant === 'warning'
+                              ? 'bg-amber-100 text-amber-700 border-amber-300'
+                              : badgeInfo.variant === 'destructive'
+                              ? 'bg-red-100 text-red-700 border-red-300'
+                              : 'bg-blue-100 text-blue-700 border-blue-300'
+                          }
+                        >
+                          {badgeInfo.label}
+                        </Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="mb-8">
           <CardHeader>
             <h2 className="text-xl font-semibold text-slate-900">Operaciones recientes</h2>
           </CardHeader>
           <CardContent>
-            {userOperations.length === 0 ? (
+            {operaciones.length === 0 ? (
               <div className="text-center py-8 text-slate-600">
                 No tienes operaciones aún
               </div>
             ) : (
               <div className="space-y-3">
-                {userOperations.map((operation) => (
+                {operaciones.slice(0, 3).map((operation) => (
                   <div
-                    key={operation.id}
+                    key={operation.idPII}
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-lg gap-3"
                   >
                     <div className="flex-1">
-                      <div className="font-medium text-slate-900">{operation.productTitle}</div>
+                      <div className="font-medium text-slate-900">{operation.tituloPublicacion}</div>
                       <div className="text-sm text-slate-600 mt-1">
-                        Cliente: {operation.clientName ?? '-'} • {operation.startDate ? new Date(operation.startDate).toLocaleDateString('es-AR') : operation.date ? new Date(operation.date).toLocaleDateString('es-AR') : '-'}
+                        Cliente: {operation.nombreUsuarioCliente} {operation.apellidoUsuarioCliente} • {formatDateString(operation.fechaHPII)}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge
                         variant={
-                          operation.type === 'donation'
+                          operation.nombreTipoInteraccion?.toUpperCase() === 'DONACION'
                             ? 'success'
-                            : operation.type === 'rental'
+                            : operation.nombreTipoInteraccion?.toUpperCase() === 'ALQUILER'
                             ? 'info'
                             : 'warning'
                         }
                       >
-                        {operationTypeLabels[operation.type]}
+                        {operation.nombreTipoInteraccion?.toUpperCase() === 'DONACION'
+                          ? 'Donación'
+                          : operation.nombreTipoInteraccion?.toUpperCase() === 'ALQUILER'
+                          ? 'Alquiler'
+                          : 'Venta'}
                       </Badge>
                       <div className="font-medium text-slate-900">
-                        {operation.amount ? `$${operation.amount.toLocaleString()}` : 'Gratis'}
+                        {operation.montoOperacion ? `$${operation.montoOperacion.toLocaleString()}` : 'Gratis'}
                       </div>
                       <button
-                        onClick={() => handleReportClient(operation.clientName ?? '')}
+                        onClick={() => handleReportClient(`${operation.nombreUsuarioCliente} ${operation.apellidoUsuarioCliente}`)}
                         className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                         title="Reportar cliente"
                       >
