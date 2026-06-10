@@ -4,6 +4,7 @@ import { publicacionInsumoService } from '../services/publicacionInsumoService';
 import { diccionarioService, type ParametricOption } from '../services/diccionarioService';
 import type { PublicacionInsumoCreate } from '../types/publicacionInsumo';
 import { Button } from '../components/ui/button';
+import { Alert } from './Alert';
 import { MapPin, UploadCloud, Loader2, ArrowLeft, X } from 'lucide-react';
 
 export function PublicacionInsumoForm() {
@@ -34,6 +35,21 @@ export function PublicacionInsumoForm() {
   const [tiposInsumo, setTiposInsumo] = useState<ParametricOption[]>([]);
   const [estadosInsumo, setEstadosInsumo] = useState<ParametricOption[]>([]);
   const [tiposOperacion, setTiposOperacion] = useState<ParametricOption[]>([]);
+
+  const [alert, setAlert] = useState<{ mensaje: string; tipo: 'roja' | 'verde' | 'amarilla' } | null>(null);
+  const [showAlert, setShowAlert] = useState(false);
+
+  useEffect(() => {
+    if (alert) {
+      setShowAlert(true);
+      const hideTimer = setTimeout(() => setShowAlert(false), 3000);
+      const clearTimer = setTimeout(() => setAlert(null), 3500);
+      return () => {
+        clearTimeout(hideTimer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [alert]);
 
   useEffect(() => {
     const init = async () => {
@@ -118,7 +134,7 @@ export function PublicacionInsumoForm() {
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
-      alert('La geolocalización no es soportada por tu navegador');
+      setAlert({ mensaje: 'Geolocalización no soportada', tipo: 'amarilla' });
       return;
     }
     setLocating(true);
@@ -132,7 +148,7 @@ export function PublicacionInsumoForm() {
         setLocating(false);
       },
       (err) => {
-        alert('No se pudo obtener la ubicación: ' + err.message);
+        setAlert({ mensaje: 'Error de ubicación: ' + err.message, tipo: 'roja' });
         setLocating(false);
       }
     );
@@ -150,7 +166,7 @@ export function PublicacionInsumoForm() {
         urlsImagenes: [...prev.urlsImagenes, url],
       }));
     } catch (err: any) {
-      alert('Error al subir imagen: ' + err.message);
+      setAlert({ mensaje: 'Error al subir imagen: ' + err.message, tipo: 'roja' });
     } finally {
       setUploadingImage(false);
       e.target.value = ''; // reset input
@@ -423,6 +439,7 @@ export function PublicacionInsumoForm() {
           </Button>
         </div>
       </form>
+      <Alert alert={alert} show={showAlert} onClose={() => setShowAlert(false)} />
     </div>
   );
 }

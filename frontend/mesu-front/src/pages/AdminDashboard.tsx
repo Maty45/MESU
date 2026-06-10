@@ -16,6 +16,7 @@ import {
   RefreshCcw,
   DollarSign,
 } from 'lucide-react';
+import { Alert as CustomAlert } from './Alert';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 interface RolDTO {
@@ -129,6 +130,21 @@ export function AdminDashboard() {
   const [errorPublications, setErrorPublications] = useState<string | null>(null);
   const [errorUsers, setErrorUsers] = useState<string | null>(null);
   const [errorReports, setErrorReportes] = useState<string | null>(null);
+
+  const [alert, setAlert] = useState<{ mensaje: string; tipo: 'roja' | 'verde' | 'amarilla' } | null>(null);
+  const [showAlert, setShowAlert] = useState(false);
+
+  useEffect(() => {
+    if (alert) {
+      setShowAlert(true);
+      const hideTimer = setTimeout(() => setShowAlert(false), 3000);
+      const clearTimer = setTimeout(() => setAlert(null), 3500);
+      return () => {
+        clearTimeout(hideTimer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [alert]);
 
   const [metrics, setMetrics] = useState({ 
     usuariosTotales: 0, 
@@ -283,10 +299,10 @@ export function AdminDashboard() {
           headers: getAuthHeader(),
         });
         if (!response.ok) throw new Error(`Status: ${response.status}`);
-        alert(`Publicación ${productId} eliminada.`);
+        setAlert({ mensaje: `Publicación ${productId} eliminada con éxito`, tipo: 'verde' });
         fetchPublications();
       } catch (error) {
-        setErrorPublications("Error al eliminar la publicación.");
+        setAlert({ mensaje: 'Error al eliminar la publicación', tipo: 'roja' });
       }
     }
   };
@@ -301,16 +317,16 @@ export function AdminDashboard() {
         });
         if (!response.ok) throw new Error(`Status: ${response.status}`);
         setBackendUsers((prev) => prev.filter((u) => u.dniUsuario !== dni));
-        alert(`Usuario con DNI ${dni} eliminado con éxito.`);
+        setAlert({ mensaje: `Usuario con DNI ${dni} eliminado con éxito`, tipo: 'verde' });
       } catch (error) {
-        setErrorUsers("Error al eliminar el usuario.");
+        setAlert({ mensaje: 'Error al eliminar el usuario', tipo: 'roja' });
       }
     }
   };
 
   const handleResolveReport = (reportId: number) => {
     console.log('Resolver reporte:', reportId);
-    alert(`Reporte ${reportId} marcado localmente como atendido.`);
+    setAlert({ mensaje: `Reporte ${reportId} resuelto`, tipo: 'verde' });
   };
 
   const COLORS = ['#3b82f6', '#14b8a6', '#8b5cf6', '#f59e0b', '#ef4444', '#6b7280'];
@@ -583,6 +599,8 @@ export function AdminDashboard() {
             </CardContent>
           </Card>
         )}
+
+        <CustomAlert alert={alert} show={showAlert} onClose={() => setShowAlert(false)} />
       </div>
     </div>
   );

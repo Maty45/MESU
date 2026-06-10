@@ -6,6 +6,7 @@ import { publicacionInsumoService } from '../services/publicacionInsumoService';
 import type { PublicacionInsumoResponse } from '../types/publicacionInsumo';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Alert } from './Alert';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -55,6 +56,21 @@ export function ProductDetail() {
   const [montoAcordado, setMontoAcordado] = useState(0);
   const [fechaDevolucion, setFechaDevolucion] = useState('');
   const [concrecionType, setConcrecionType] = useState<'VENTA' | 'DONACION' | null>(null);
+
+  const [alert, setAlert] = useState<{ mensaje: string; tipo: 'roja' | 'verde' | 'amarilla' } | null>(null);
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (alert) {
+      setShow(true);
+      const hideTimer = setTimeout(() => setShow(false), 3000);
+      const clearTimer = setTimeout(() => setAlert(null), 3500);
+      return () => {
+        clearTimeout(hideTimer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [alert]);
 
   const isOwner = user && product && (
     product.nombreUsuario && product.apellidoUsuario
@@ -160,7 +176,7 @@ export function ProductDetail() {
 
   const handleSendMessage = async () => {
     if (!product || product.telefonoUsuario === undefined || product.telefonoUsuario === null) {
-      alert('No se pudo obtener el número de teléfono del propietario.');
+      setAlert({ mensaje: 'No se pudo obtener el teléfono del propietario', tipo: 'roja' });
       return;
     }
 
@@ -191,14 +207,14 @@ export function ProductDetail() {
         fechaHastaAcordada,
         montoAcordado
       });
-      alert('Alquiler registrado con éxito. El insumo ahora está alquilado.');
+      setAlert({ mensaje: 'Alquiler registrado con éxito', tipo: 'verde' });
       setShowAlquilerModal(false);
       if (id) {
         fetchProduct(parseInt(id));
         fetchInteracciones(parseInt(id));
       }
     } catch (err: any) {
-      alert('Error al registrar alquiler: ' + err.message);
+      setAlert({ mensaje: 'Error: ' + err.message, tipo: 'roja' });
     }
   };
 
@@ -209,14 +225,14 @@ export function ProductDetail() {
       await publicacionInsumoService.registrarDevolucion(product.id, {
         fechaDevolucion: fechaDevolucion || null
       });
-      alert('Devolución registrada con éxito. La publicación vuelve a estar activa.');
+      setAlert({ mensaje: 'Devolución registrada con éxito', tipo: 'verde' });
       setShowDevolucionModal(false);
       if (id) {
         fetchProduct(parseInt(id));
         fetchInteracciones(parseInt(id));
       }
     } catch (err: any) {
-      alert('Error al registrar devolución: ' + err.message);
+      setAlert({ mensaje: 'Error: ' + err.message, tipo: 'roja' });
     }
   };
 
@@ -226,14 +242,14 @@ export function ProductDetail() {
       await publicacionInsumoService.concretarInteraccion(selectedInteraccion.idPII, {
         tipoInteraccionConcretada: concrecionType
       });
-      alert(`${concrecionType === 'VENTA' ? 'Venta' : 'Donación'} registrada con éxito. La publicación ha finalizado.`);
+      setAlert({ mensaje: `${concrecionType === 'VENTA' ? 'Venta' : 'Donación'} registrada con éxito`, tipo: 'verde' });
       setShowConcretarConfirmModal(false);
       if (id) {
         fetchProduct(parseInt(id));
         fetchInteracciones(parseInt(id));
       }
     } catch (err: any) {
-      alert(`Error al registrar ${concrecionType === 'VENTA' ? 'venta' : 'donación'}: ` + err.message);
+      setAlert({ mensaje: 'Error: ' + err.message, tipo: 'roja' });
     }
   };
 
@@ -259,7 +275,7 @@ export function ProductDetail() {
     if (!product) return;
 
     if (!reportReason.trim()) {
-      alert("Debes indicar el motivo del reporte");
+      setAlert({ mensaje: 'Debes indicar el motivo del reporte', tipo: 'amarilla' });
       return;
     }
 
@@ -285,11 +301,11 @@ export function ProductDetail() {
       setReportReason('');
       setReportType('OTRO');
       setShowReportModal(false);
-      alert("Reporte enviado correctamente");
+      setAlert({ mensaje: 'Reporte enviado correctamente', tipo: 'verde' });
 
     } catch (error) {
       console.error(error);
-      alert("No se pudo enviar el reporte");
+      setAlert({ mensaje: 'No se pudo enviar el reporte', tipo: 'roja' });
     }
   };
 
@@ -930,6 +946,8 @@ export function ProductDetail() {
           </div>
         </div>
       )}
+
+      <Alert alert={alert} show={show} onClose={() => setShow(false)} />
     </div>
   );
 }

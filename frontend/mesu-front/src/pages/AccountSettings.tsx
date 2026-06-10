@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Edit2 } from 'lucide-react';
+import { Alert } from './Alert';
 
 export function AccountSettings() {
   const { user, isAuthenticated } = useAuth();
@@ -20,6 +21,21 @@ export function AccountSettings() {
     email: user?.email || 'usuario@email.com',
     telefono: '+54 9 11 1234-5678',
   });
+
+  const [alert, setAlert] = useState<{ mensaje: string; tipo: 'roja' | 'verde' | 'amarilla' } | null>(null);
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (alert) {
+      setShow(true);
+      const hideTimer = setTimeout(() => setShow(false), 3000);
+      const clearTimer = setTimeout(() => setAlert(null), 3500);
+      return () => {
+        clearTimeout(hideTimer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [alert]);
 
   if (!isAuthenticated) {
     navigate('/login');
@@ -53,8 +69,8 @@ export function AccountSettings() {
   };
 
   const handleConfirmDelete = () => {
-    alert('Cuenta eliminada exitosamente');
-    navigate('/login');
+    setAlert({ mensaje: 'Cuenta eliminada exitosamente', tipo: 'verde' });
+    setTimeout(() => navigate('/login'), 2000);
   };
 
   const handleCancelDelete = () => {
@@ -166,6 +182,8 @@ export function AccountSettings() {
           </div>
         </div>
       )}
+
+      <Alert alert={alert} show={show} onClose={() => setShow(false)} />
     </div>
   );
 }

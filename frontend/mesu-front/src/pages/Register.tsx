@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
+import { Alert } from './Alert';
 import logoMesu from '../assets/images/logo.png';
 
 export function Register() {
@@ -18,11 +19,26 @@ export function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const [alert, setAlert] = useState<{ mensaje: string; tipo: 'roja' | 'verde' | 'amarilla' } | null>(null);
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (alert) {
+      setShow(true);
+      const hideTimer = setTimeout(() => setShow(false), 3000);
+      const clearTimer = setTimeout(() => setAlert(null), 3500);
+      return () => {
+        clearTimeout(hideTimer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [alert]);
+
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      alert('Las contraseñas no coinciden');
+      setAlert({ mensaje: 'Las contraseñas no coinciden', tipo: 'roja' });
       return;
     }
 
@@ -36,12 +52,12 @@ export function Register() {
         telefono
       );
 
-      alert('Usuario registrado correctamente');
-      navigate('/login');
+      setAlert({ mensaje: 'Usuario registrado correctamente', tipo: 'verde' });
+      setTimeout(() => navigate('/login'), 2000);
 
     } catch (error) {
       console.error(error);
-      alert('Error al registrar usuario');
+      setAlert({ mensaje: 'Error al registrar usuario', tipo: 'roja' });
     }
   };
 
@@ -198,6 +214,7 @@ export function Register() {
           </div>
 
         </div>
+        <Alert alert={alert} show={show} onClose={() => setShow(false)} />
       </div>
     </div>
   );
