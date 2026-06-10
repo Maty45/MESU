@@ -9,6 +9,7 @@ import com.usuariorol.dto.UsuarioRolDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime; // Import LocalDateTime
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -89,12 +90,18 @@ public class UsuarioService {
     }
 
     @Transactional
-    public  String delete(Long dni) {
-        try{
-            usuarioRepository.deleteByDniUsuario(dni);
-            return "Usuario eliminado con DNI: " + dni;
+    public String delete(Long dni) {
+        try {
+            Usuario usuario = usuarioRepository.findByDniUsuario(dni)
+                    .orElseThrow(() -> new UsuarioNotFoundException("Usuario no encontrado con DNI: " + dni));
+
+            usuario.setFechaHBajaUsuario(LocalDateTime.now());
+            usuarioRepository.save(usuario);
+            return "Usuario con DNI: " + dni + " dado de baja exitosamente.";
+        } catch (UsuarioNotFoundException e) {
+            throw e; // Re-throw specific exception
         } catch (Exception e) {
-            throw new RuntimeException("Error al eliminar el usuario: " + e.getMessage());
+            throw new RuntimeException("Error al dar de baja el usuario: " + e.getMessage());
         }
     }
 

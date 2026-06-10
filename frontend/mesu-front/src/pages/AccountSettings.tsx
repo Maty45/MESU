@@ -88,9 +88,26 @@ export function AccountSettings() {
     setEditValue('');
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
+   try {
+    const confirmacion = await fetch('http://localhost:8080/api/usuario/delete?dni=' + user?.dni, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
     setShowDeleteModal(true);
-  };
+    setAlert({ mensaje: 'Eliminando cuenta...', tipo: 'amarilla' });
+    if (!confirmacion.ok) {
+      setAlert({ mensaje: 'Error al eliminar la cuenta', tipo: 'roja' });
+      throw new Error('Failed to delete account');
+    }
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    setAlert({ mensaje: 'Error al eliminar la cuenta', tipo: 'roja' });
+  }
+};
 
   const handleConfirmDelete = () => {
     setAlert({ mensaje: 'Cuenta eliminada exitosamente', tipo: 'verde' });
