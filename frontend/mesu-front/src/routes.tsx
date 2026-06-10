@@ -21,7 +21,7 @@ export const router = createBrowserRouter([
       { path: "login", Component: Login },
       { path: "register", Component: Register },
       { path: "marketplace", Component: Marketplace },
-      { path: "accountsettings", Component: AccountSettings },
+      { path: "account-settings", Component: AccountSettings },
       { path: "create-product", Component: PublicacionInsumoForm },
       { path: "admin-dashboard", Component: AdminDashboard },
       { path: "client-dashboard", Component: ClientDashboard },

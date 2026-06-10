@@ -13,13 +13,13 @@ export function AccountSettings() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editField, setEditField] = useState('');
   const [editValue, setEditValue] = useState('');
-
+ 
   const [accountData, setAccountData] = useState({
-    dni: '12345678',
+    dni: user?.dni || 'No encontrado', // Usar user?.dni
     nombre: user?.name.split(' ')[0] || 'Juan',
     apellido: user?.name.split(' ').slice(1).join(' ') || 'Pérez',
     email: user?.email || 'usuario@email.com',
-    telefono: '+54 9 11 1234-5678',
+    telefono: user?.telefono || 'No encontrado', // Usar user?.telefono
   });
 
   const [alert, setAlert] = useState<{ mensaje: string; tipo: 'roja' | 'verde' | 'amarilla' } | null>(null);
@@ -48,11 +48,35 @@ export function AccountSettings() {
     setShowEditModal(true);
   };
 
-  const handleConfirmEdit = () => {
-    setAccountData({
+  const handleConfirmEdit = async () => {
+    const updatedAccountData = {
       ...accountData,
       [editField]: editValue,
-    });
+    };
+
+    try {
+      const token = localStorage.getItem('token');
+      const dataUptdated = await fetch('http://localhost:8080/api/usuario/modify', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updatedAccountData), // Send the full updated object
+      });
+
+      console.log('Response from server:', dataUptdated);
+      if (!dataUptdated.ok) {
+        setAlert({ mensaje: 'Error al actualizar los datos', tipo: 'roja' });
+        throw new Error('Failed to update account data');
+      }
+
+      setAccountData(updatedAccountData); // Update local state after successful API call
+      setAlert({ mensaje: 'Datos actualizados exitosamente', tipo: 'verde' });
+    } catch (error) {
+      console.error('Error updating account data:', error);
+      setAlert({ mensaje: 'Error al actualizar los datos', tipo: 'roja' });
+    }
     setShowEditModal(false);
     setEditField('');
     setEditValue('');

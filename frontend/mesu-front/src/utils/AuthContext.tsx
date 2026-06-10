@@ -10,6 +10,8 @@ interface User {
   roles: string[];
   token: string; // Added token property
   avatar?: string;
+  dni?: string; // Añadido para el DNI del usuario
+  telefono?: string; // Añadido para el teléfono del usuario
 }
 
 interface AuthContextType {
@@ -72,12 +74,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Store token in localStorage
       localStorage.setItem("token", data.token);
 
-      const loggedInUser: User = { // Renamed to avoid conflict with 'user' state
+      let profileData: any = {};
+      const profileResponse = await fetch("http://localhost:8080/users/me", {
+        headers: {
+          Authorization: `Bearer ${data.token}`,
+        },
+      });
+      if (profileResponse.ok) {
+        profileData = await profileResponse.json();
+      } else {
+        console.warn("Failed to fetch user profile, using basic user data");
+      }
+
+      const loggedInUser: User = {
         id: data.email,
         name: `${data.nombre} ${data.apellido}`,
         email: data.email,
         roles: data.roles,
-        token: data.token // Include token in the user object
+        token: data.token,
+        dni: data.dni || profileData.dniUsuario || undefined, // Mapear dni del backend
+        telefono: data.telefono || profileData.telefonoUsuario || undefined, // Mapear telefonoUsuario del backend
       };
 
       console.log("USUARIO A GUARDAR:", loggedInUser);

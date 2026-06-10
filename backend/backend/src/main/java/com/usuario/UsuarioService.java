@@ -3,6 +3,7 @@ package com.usuario;
 import com.exception.UsuarioNotFoundException;
 import com.rol.dto.RolDTO;
 import com.usuario.dto.UsuarioDTO;
+import com.usuario.dto.UsuarioUpdateDTO;
 import com.usuariorol.UsuarioRol;
 import com.usuariorol.dto.UsuarioRolDTO;
 import org.springframework.stereotype.Service;
@@ -71,12 +72,20 @@ public class UsuarioService {
                 .orElseThrow(() -> new UsuarioNotFoundException("Usuario no encontrado con DNI: " + dni));
     }
 
-    public Usuario modify(Usuario usuario) {
-        try {
-            return usuarioRepository.save(usuario);
-        } catch (Exception e) {
-            throw new RuntimeException("Error al modificar el usuario: " + e.getMessage());
-        }
+    @Transactional
+    public Usuario modify(UsuarioUpdateDTO dto) {
+
+        Usuario usuario = usuarioRepository
+                .findByEmailUsuario(dto.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+
+        usuario.setNombreUsuario(dto.getNombre());
+        usuario.setApellidoUsuario(dto.getApellido());
+        usuario.setTelefonoUsuario(dto.getTelefono());
+        usuario.setDniUsuario(dto.getDni());
+
+        return usuarioRepository.save(usuario);
     }
 
     @Transactional

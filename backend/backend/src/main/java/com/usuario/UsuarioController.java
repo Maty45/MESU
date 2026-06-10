@@ -1,6 +1,7 @@
 package com.usuario;
 
 import com.usuario.dto.UsuarioDTO; // Import UsuarioDTO
+import com.usuario.dto.UsuarioUpdateDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,13 +42,10 @@ public class UsuarioController {
     }
 
     @PutMapping("/modify")
-     public ResponseEntity<Usuario> modify(@RequestBody Usuario usuario) {
-        try {
-            return ResponseEntity.ok(service.modify(usuario));
-        } catch (Exception e) {
-            System.err.println("Error al modificar el usuario: " + e.getMessage());
-            throw new RuntimeException("Error al modificar el usuario: " + e.getMessage());
-        }
+    public ResponseEntity<Usuario> modify(
+            @RequestBody UsuarioUpdateDTO dto
+    ) {
+        return ResponseEntity.ok(service.modify(dto));
     }
 
     @DeleteMapping("/delete")

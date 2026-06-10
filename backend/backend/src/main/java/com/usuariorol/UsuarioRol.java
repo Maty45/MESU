@@ -1,6 +1,7 @@
 package com.usuariorol;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore; // Import JsonIgnore
 import com.usuario.Usuario;
 import com.rol.Rol;
 import jakarta.persistence.*;
@@ -25,12 +26,12 @@ public class UsuarioRol {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_usuario", nullable = false)
-    @JsonBackReference
+    @JsonBackReference("usuario-usuarioRol")
     private Usuario usuario;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_rol", nullable = false)
-    // Removed @JsonBackReference here
+    @JsonIgnore // Use JsonIgnore to break the serialization loop with Rol
     private Rol rol;
 
     @Column(name = "fecha_alta_ur", nullable = false)

@@ -2,17 +2,17 @@ package com.usuario.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
-public record UsuarioUpdateDTO(
-        String nombreUsuario,
-        String apellidoUsuario,
+@Getter
+@Setter
+public class UsuarioUpdateDTO {
 
-        @Email
-        String emailUsuario,
+        private Long dni;
+        private String nombre;
+        private String apellido;
+        private String email;
+        private Long telefono;
 
-        @Size(min = 8)
-        String contraseniaUsuario,
-
-        Long telefonoUsuario
-) {
 }

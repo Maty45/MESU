@@ -49,9 +49,11 @@ public class Usuario {
     @Column(name = "fecha_hora_baja_usuario")
     private LocalDateTime fechaHBajaUsuario;
 
-    @OneToMany(mappedBy = "usuario",
+    @OneToMany(
+            mappedBy = "usuario",
             cascade = CascadeType.ALL,
-            orphanRemoval = true)
-    @JsonManagedReference
+            orphanRemoval = true
+    )
+    @JsonManagedReference("usuario-usuarioRol")
     private List<UsuarioRol> usuarioRoles;
 }

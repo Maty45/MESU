@@ -114,7 +114,9 @@ public class AuthService {
                 usuario.getNombreUsuario(),
                 usuario.getApellidoUsuario(),
                 usuario.getEmailUsuario(),
-                roles
+                roles,
+                usuario.getDniUsuario(),
+                usuario.getTelefonoUsuario()
         );
     }
 
